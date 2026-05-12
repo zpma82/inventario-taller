@@ -1,3 +1,6 @@
+-- Forzar charset UTF-8 multibyte
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- =============================================================
 -- INVENTARIO TALLER — Schema completo
 -- Ejecutar con: mysql -u root -p < sql/01_schema.sql

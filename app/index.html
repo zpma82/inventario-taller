@@ -1075,7 +1075,8 @@
         const ok = !busq || (e.nombre||'').toLowerCase().includes(busq) ||
                             (e.numero_serie||'').toLowerCase().includes(busq) ||
                             lbl.toLowerCase().includes(busq);
-        return ok && (!cat||e.categoria===cat) && (!est||e.fila_estado===est||e.estado===est);
+        const estNorm = s => (s||'').normalize('NFC');
+        return ok && (!cat||e.categoria===cat) && (!est||estNorm(e.fila_estado)===estNorm(est)||estNorm(e.estado)===estNorm(est));
       });
       datos.sort((a,b) => {
         let va=a[sortCol]??'', vb=b[sortCol]??'';
@@ -1145,8 +1146,12 @@
       return `<span class="badge ${cls}">${ico} ${cat||'Sin categoría'}</span>`;
     }
     function badgeEstado(est) {
-      const cls=est==='Activo'?'e-activo':est==='En reparación'?'e-reparacion':'e-baja';
-      return `<span class="estado ${cls}"><span class="dot"></span>${est}</span>`;
+      if (!est) return '<span class="estado e-baja"><span class="dot"></span>—</span>';
+      const estNorm = est.normalize('NFC');
+      const cls = estNorm==='Activo' ? 'e-activo'
+                : (estNorm==='En reparación'||estNorm==='En Reparación') ? 'e-reparacion'
+                : 'e-baja';
+      return `<span class="estado ${cls}"><span class="dot"></span>${estNorm}</span>`;
     }
 
     // ── Historial ─────────────────────────────
@@ -1184,9 +1189,11 @@
       const hayFiltro = filtrados && uniqueIds(filtrados) < uniqueIds(all);
       const fmt = (f,t) => hayFiltro ? `${f} de ${t}` : String(t);
       document.getElementById('st-total').textContent      = fmt(uniqueIds(fil), uniqueIds(all));
-      document.getElementById('st-activos').textContent    = fmt(fil.filter(e=>(e.fila_estado||e.estado)==='Activo').length,      all.filter(e=>(e.fila_estado||e.estado)==='Activo').length);
-      document.getElementById('st-reparacion').textContent = fmt(fil.filter(e=>(e.fila_estado||e.estado)==='En reparación').length, all.filter(e=>(e.fila_estado||e.estado)==='En reparación').length);
-      document.getElementById('st-baja').textContent       = fmt(fil.filter(e=>(e.fila_estado||e.estado)==='Baja').length,         all.filter(e=>(e.fila_estado||e.estado)==='Baja').length);
+      const nfc = s => (s||'').normalize('NFC');
+      const fEstado = e => nfc(e.fila_estado||e.estado);
+      document.getElementById('st-activos').textContent    = fmt(fil.filter(e=>fEstado(e)==='Activo').length,         all.filter(e=>fEstado(e)==='Activo').length);
+      document.getElementById('st-reparacion').textContent = fmt(fil.filter(e=>fEstado(e)==='En reparación').length,  all.filter(e=>fEstado(e)==='En reparación').length);
+      document.getElementById('st-baja').textContent       = fmt(fil.filter(e=>fEstado(e)==='Baja').length,           all.filter(e=>fEstado(e)==='Baja').length);
       document.getElementById('st-unidades').textContent   = fmt(sumUnits(fil), sumUnits(all));
     }
 

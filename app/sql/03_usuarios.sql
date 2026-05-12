@@ -1,3 +1,6 @@
+-- Forzar charset UTF-8 multibyte
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- =============================================================
 -- INVENTARIO IT — Roles y usuarios MySQL (sintaxis MySQL 8.4)
 -- Ejecutar con: mysql -u root -p < sql/03_usuarios.sql

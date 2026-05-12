@@ -1,3 +1,6 @@
+-- Forzar charset UTF-8 multibyte
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- =============================================================
 -- INVENTARIO IT — Datos de ejemplo
 -- Ejecutar con: mysql -u root -p inventaller < sql/02_seed.sql

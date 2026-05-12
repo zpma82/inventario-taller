@@ -1,3 +1,6 @@
+-- Forzar charset UTF-8 multibyte
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- =============================================================
 -- Migración 08 — Añadir columna especificaciones a equipos
 -- Ejecutar solo si ya tienes la BD creada con el schema anterior

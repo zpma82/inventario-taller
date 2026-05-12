@@ -1,3 +1,6 @@
+-- Forzar charset UTF-8 multibyte
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- =============================================================
 -- INVENTARIO IT v3 — Vistas útiles para consulta directa en MySQL
 -- Ejecutar UNA SOLA VEZ:

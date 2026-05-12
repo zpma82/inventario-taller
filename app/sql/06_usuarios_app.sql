@@ -1,3 +1,6 @@
+-- Forzar charset UTF-8 multibyte
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- =============================================================
 -- INVENTARIO IT — Usuarios del frontend web
 -- Ejecutar: mysql -u root -p inventaller < sql/06_usuarios_app.sql

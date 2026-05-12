@@ -1,3 +1,6 @@
+-- Forzar charset UTF-8 multibyte
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- =============================================================
 -- INVENTARIO TALLER — Migración: tabla subcategorias
 -- Ejecutar UNA SOLA VEZ en bases de datos ya existentes:
