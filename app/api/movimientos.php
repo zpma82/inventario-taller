@@ -50,6 +50,9 @@ if ($method === 'GET') {
         $lineas      = $d['lineas'] ?? [];
         $filaEstado  = $d['fila_estado'] ?? null;   // estado de la línea origen que se divide
 
+        // DEBUG TEMPORAL
+        error_log('SEPARACION payload: ' . json_encode(['fila_estado'=>$filaEstado,'lineas'=>$lineas]));
+
         if (empty($lineas)) {
             responder(['error' => 'Debes indicar al menos una línea de ubicación'], 400);
         }
