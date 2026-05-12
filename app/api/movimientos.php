@@ -50,8 +50,6 @@ if ($method === 'GET') {
         $lineas      = $d['lineas'] ?? [];
         $filaEstado  = $d['fila_estado'] ?? null;   // estado de la línea origen que se divide
 
-        // DEBUG TEMPORAL
-        error_log('SEPARACION payload: ' . json_encode(['fila_estado'=>$filaEstado,'lineas'=>$lineas]));
 
         if (empty($lineas)) {
             responder(['error' => 'Debes indicar al menos una línea de ubicación'], 400);
@@ -141,7 +139,7 @@ if ($method === 'GET') {
             responder(['mensaje' => 'Separación de ubicaciones guardada'], 201);
         } catch (Exception $e) {
             $pdo->rollBack();
-            responder(['error' => 'Error en la transacción: ' . $e->getMessage()], 500);
+            responder(['error' => 'Error en la transacción: ' . $e->getMessage(), 'debug_lineas' => $lineas, 'debug_fila_estado' => $filaEstado], 500);
         }
         return;
     }
