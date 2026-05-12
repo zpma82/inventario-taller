@@ -118,23 +118,29 @@ if ($method === 'GET') {
                 }
             }
 
-            // Borrar TODAS las líneas del equipo para este estado origen
-            // y también cualquier línea que coincida con ubic+estado destino
-            // para evitar violación de UNIQUE KEY uk_equipo_ubic_estado
-            foreach ($lineasNorm as $ln) {
-                $pdo->prepare("
-                    DELETE FROM equipo_ubicaciones
-                    WHERE equipo_id = ? AND ubicacion_id = ? AND estado = ?
-                ")->execute([$equipo_id, $ln['uid'], $ln['est']]);
-            }
-
-            // Insertar las nuevas líneas (sin posibilidad de duplicado)
-            $ins = $pdo->prepare("
+            // Distribuir cada línea destino:
+            // - Si ya existe (ubic+estado), sumar cantidad
+            // - Si no existe, insertar nueva fila
+            $stmtExiste = $pdo->prepare("
+                SELECT id, cantidad FROM equipo_ubicaciones
+                WHERE equipo_id = ? AND ubicacion_id = ? AND estado = ?
+            ");
+            $stmtSuma = $pdo->prepare("
+                UPDATE equipo_ubicaciones SET cantidad = cantidad + ?
+                WHERE equipo_id = ? AND ubicacion_id = ? AND estado = ?
+            ");
+            $stmtIns = $pdo->prepare("
                 INSERT INTO equipo_ubicaciones (equipo_id, ubicacion_id, cantidad, estado)
                 VALUES (?,?,?,?)
             ");
             foreach ($lineasNorm as $ln) {
-                $ins->execute([$equipo_id, $ln['uid'], $ln['cant'], $ln['est']]);
+                $stmtExiste->execute([$equipo_id, $ln['uid'], $ln['est']]);
+                $existente = $stmtExiste->fetch();
+                if ($existente) {
+                    $stmtSuma->execute([$ln['cant'], $equipo_id, $ln['uid'], $ln['est']]);
+                } else {
+                    $stmtIns->execute([$equipo_id, $ln['uid'], $ln['cant'], $ln['est']]);
+                }
             }
 
             // Recalcular cantidad total del equipo y ubicacion_id legacy
