@@ -1,0 +1,1560 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inventario Taller</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #f4f6f9;
+      --surface:   #ffffff;
+      --border:    #e2e6ed;
+      --accent:    #2563eb;
+      --accent-lt: #eff4ff;
+      --ok:        #16a34a;   --ok-lt:     #f0fdf4;
+      --warn:      #d97706;   --warn-lt:   #fffbeb;
+      --danger:    #dc2626;   --danger-lt: #fef2f2;
+      --txt:       #1e2535;
+      --txt-2:     #64748b;
+      --txt-3:     #94a3b8;
+      --sans: 'DM Sans', sans-serif;
+      --mono: 'DM Mono', monospace;
+      --r:    8px;
+      --sh:   0 1px 3px rgba(0,0,0,.08), 0 4px 12px rgba(0,0,0,.05);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--txt); font-family: var(--sans); font-size: 15px; line-height: 1.5; min-height: 100vh; }
+
+    /* ── LOGIN ── */
+    #login-screen { position: fixed; inset: 0; background: linear-gradient(135deg, #1e2535 0%, #2563eb 100%); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
+    #login-screen.hidden { display: none; }
+    .login-card { background: #fff; border-radius: 16px; padding: 2.5rem 2rem; width: 100%; max-width: 380px; box-shadow: 0 25px 60px rgba(0,0,0,.3); }
+    .login-logo { display: flex; align-items: center; gap: .75rem; margin-bottom: 1.75rem; justify-content: center; }
+    .login-logo-icon { width: 48px; height: 48px; background: var(--accent); border-radius: 12px; display: grid; place-items: center; font-size: 1.4rem; }
+    .login-logo h1 { font-size: 1.3rem; font-weight: 700; }
+    .login-logo p  { font-size: .75rem; color: var(--txt-2); }
+    .login-field { display: flex; flex-direction: column; gap: .35rem; margin-bottom: .9rem; }
+    .login-field label { font-size: .78rem; font-weight: 600; color: var(--txt-2); }
+    .login-field input { padding: .65rem .85rem; border: 1.5px solid var(--border); border-radius: var(--r); font-family: var(--sans); font-size: .9rem; outline: none; transition: border-color .15s, box-shadow .15s; }
+    .login-field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+    .btn-login { width: 100%; padding: .75rem; background: var(--accent); color: #fff; border: none; border-radius: var(--r); font-family: var(--sans); font-size: .95rem; font-weight: 700; cursor: pointer; transition: background .15s, transform .1s; margin-top: .25rem; }
+    .btn-login:hover { background: #1d4ed8; } .btn-login:active { transform: scale(.98); }
+    .login-error { background: var(--danger-lt); border: 1px solid #fca5a5; border-radius: var(--r); padding: .6rem .85rem; color: var(--danger); font-size: .85rem; margin-bottom: .85rem; display: none; }
+    .login-error.visible { display: block; }
+    .login-hint { font-size: .75rem; color: var(--txt-3); text-align: center; margin-top: 1.1rem; }
+
+    /* ── Cabecera ── */
+    #app { display: none; }
+    #app.visible { display: block; }
+    :root { --header-h: 52px; }
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0.55rem 2rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; position: sticky; top: 0; z-index: 50; box-shadow: 0 1px 4px rgba(0,0,0,.06); height: var(--header-h); box-sizing: border-box; }
+    .brand { display: flex; align-items: center; gap: .75rem; }
+    .brand-icon { width: 38px; height: 38px; background: var(--accent); border-radius: var(--r); display: grid; place-items: center; font-size: 1.1rem; flex-shrink: 0; }
+    .brand h1 { font-size: 1.1rem; font-weight: 700; color: var(--txt); }
+    .brand p  { font-size: .78rem; color: var(--txt-2); margin-top: .05rem; }
+    #fecha-header { font-family: var(--mono); font-size: .75rem; color: var(--txt-3); }
+    .header-right { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+    .user-pill { display: flex; align-items: center; gap: .5rem; background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: .3rem .75rem .3rem .45rem; font-size: .82rem; cursor: pointer; transition: border-color .15s; }
+    .user-pill:hover { border-color: var(--accent); }
+    .user-avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: .7rem; font-weight: 700; flex-shrink: 0; }
+    .rol-badge { font-size: .68rem; font-weight: 700; padding: .15rem .45rem; border-radius: 10px; }
+    .rol-admin    { background: #fdf4ff; color: #7c3aed; }
+    .rol-tecnico  { background: var(--accent-lt); color: var(--accent); }
+    .rol-usuario  { background: var(--ok-lt); color: var(--ok); }
+    .rol-invitado { background: #f1f5f9; color: var(--txt-2); }
+
+    /* ── Banner error ── */
+    .api-banner { display: none; margin: 1rem 2rem 0; padding: .7rem 1rem; background: var(--danger-lt); border: 1px solid #fca5a5; border-radius: var(--r); color: var(--danger); font-size: .85rem; }
+    .api-banner.visible { display: flex; align-items: center; gap: .5rem; }
+
+    /* ── Stats ── */
+    .stats { display: flex; flex-wrap: wrap; gap: .4rem; padding: .35rem 2rem; background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: var(--header-h); z-index: 40; }
+    .stat-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--r); padding: .3rem .75rem; box-shadow: none; display: flex; flex-direction: row; align-items: center; gap: .4rem; border-left: 3px solid transparent; flex: 0 0 auto; }
+    .stat-card.s-total { border-left-color: var(--accent); } .stat-card.s-ok { border-left-color: var(--ok); }
+    .stat-card.s-warn  { border-left-color: var(--warn); }  .stat-card.s-danger { border-left-color: var(--danger); }
+    .stat-card.s-units { border-left-color: #7c3aed; }
+    .stat-icon { font-size: .95rem; line-height:1; } .stat-label { font-size: .68rem; font-weight: 600; color: var(--txt-2); text-transform: uppercase; letter-spacing: .06em; }
+    .stat-value { font-size: 1rem; font-weight: 700; color: var(--txt); line-height: 1; margin-left: .15rem; }
+
+    /* ── Toolbar ── */
+    .toolbar { padding: 0 2rem 1rem; display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; }
+    .search-wrap { position: relative; flex: 1; min-width: 200px; }
+    .search-wrap svg { position: absolute; left: .75rem; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--txt-3); pointer-events: none; }
+    .search-wrap input { width: 100%; padding: .55rem .85rem .55rem 2.3rem; border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); color: var(--txt); font-family: var(--sans); font-size: .875rem; outline: none; transition: border-color .15s, box-shadow .15s; }
+    .search-wrap input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+    select { padding: .55rem .85rem; border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); color: var(--txt); font-family: var(--sans); font-size: .875rem; outline: none; cursor: pointer; }
+    select:focus { border-color: var(--accent); }
+    .btn-ghost { padding: .52rem .75rem; border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); color: var(--txt-2); font-size: .95rem; cursor: pointer; transition: border-color .15s, color .15s; line-height: 1; }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-primary { padding: .55rem 1.1rem; background: var(--accent); color: #fff; font-family: var(--sans); font-weight: 600; font-size: .875rem; border: none; border-radius: var(--r); cursor: pointer; display: flex; align-items: center; gap: .4rem; transition: background .15s, transform .1s; white-space: nowrap; }
+    .btn-primary:hover { background: #1d4ed8; } .btn-primary:active { transform: scale(.97); }
+    .btn-secondary { padding: .55rem 1rem; background: var(--surface); color: var(--txt-2); font-family: var(--sans); font-weight: 600; font-size: .875rem; border: 1px solid var(--border); border-radius: var(--r); cursor: pointer; display: flex; align-items: center; gap: .4rem; transition: all .15s; white-space: nowrap; }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-lt); }
+    /* Botones deshabilitados para roles sin permiso */
+    .btn-primary:disabled, .btn-secondary:disabled { opacity: .45; cursor: not-allowed; pointer-events: none; }
+
+    /* ── Spinner ── */
+    .loading { display: none; text-align: center; padding: 3rem 2rem; color: var(--txt-2); font-size: .9rem; }
+    .loading.visible { display: block; }
+    .spinner { width: 26px; height: 26px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto .75rem; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Tabla ── */
+    .table-wrap { margin: 0 2rem 2rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--sh); overflow: hidden; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    thead { background: #f8fafc; border-bottom: 1px solid var(--border); }
+    th { padding: .75rem 1rem; text-align: left; font-size: .72rem; font-weight: 600; color: var(--txt-2); text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; cursor: pointer; user-select: none; transition: color .15s; }
+    th:hover { color: var(--accent); }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f8fafc; }
+    td { padding: .8rem 1rem; vertical-align: middle; }
+    .td-id   { font-family: var(--mono); font-size: .78rem; color: var(--txt-3); }
+    .td-name { font-weight: 600; color: var(--txt); }
+    .td-sub  { font-size: .75rem; color: var(--txt-2); margin-top: .15rem; font-family: var(--mono); }
+    .td-mono { font-family: var(--mono); font-size: .82rem; color: var(--txt-2); }
+    .td-qty  { font-family: var(--mono); font-weight: 600; font-size: .95rem; color: var(--txt); }
+    .ubic-tag { display: inline-block; padding: .2rem .55rem; background: #f1f5f9; border-radius: 5px; font-family: var(--mono); font-size: .78rem; color: var(--txt-2); letter-spacing: .04em; }
+
+    /* Badges categoría */
+    .badge { display: inline-flex; align-items: center; gap: .3rem; padding: .2rem .6rem; border-radius: 20px; font-size: .72rem; font-weight: 600; white-space: nowrap; }
+    .b-pc { background: #eff6ff; color: #1d4ed8; } .b-portatil  { background: #f5f3ff; color: #6d28d9; }
+    .b-monitor { background: #f0fdf4; color: #15803d; } .b-impresora { background: #fffbeb; color: #b45309; }
+    .b-red { background: #fff1f2; color: #be123c; } .b-otro { background: #f1f5f9; color: #475569; }
+
+    /* Badges estado */
+    .estado { display: inline-flex; align-items: center; gap: .4rem; font-size: .8rem; font-weight: 500; padding: .25rem .7rem; border-radius: 20px; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .e-activo     { background: var(--ok-lt);     color: var(--ok); }     .e-activo     .dot { background: var(--ok); }
+    .e-reparacion { background: var(--warn-lt);   color: var(--warn); }   .e-reparacion .dot { background: var(--warn); }
+    .e-baja       { background: var(--danger-lt); color: var(--danger); } .e-baja       .dot { background: var(--danger); }
+
+    /* Botones fila */
+    .actions { display: flex; gap: .35rem; }
+    .btn-row { width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 6px; background: transparent; cursor: pointer; display: grid; place-items: center; font-size: .85rem; color: var(--txt-3); transition: all .15s; }
+    .btn-row:hover          { background: var(--bg); border-color: #cbd5e1; color: var(--txt-2); }
+    .btn-row:hover.r-edit   { border-color: var(--accent); color: var(--accent); background: var(--accent-lt); }
+    .btn-row:hover.r-move   { border-color: var(--warn);   color: var(--warn);   background: var(--warn-lt); }
+    .btn-row:hover.r-del    { border-color: var(--danger);  color: var(--danger);  background: var(--danger-lt); }
+    .btn-row:disabled       { opacity: .3; cursor: not-allowed; pointer-events: none; }
+    .empty-row td { text-align: center; padding: 4rem 1rem; color: var(--txt-2); font-size: .9rem; }
+    .empty-icon   { font-size: 2rem; display: block; margin-bottom: .5rem; }
+
+    /* ── Separador visual de grupos de equipo ── */
+    tr.grupo-sep td { border-top: 2px solid var(--border); }
+
+    /* ── Historial ── */
+    .hist-panel { background: #f8fafc; }
+    .hist-panel > td { padding: 1rem 1rem 1rem 3rem; }
+    .hist-title { font-size: .8rem; font-weight: 600; color: var(--txt-2); margin-bottom: .6rem; }
+    .hist-panel table { font-size: .8rem; } .hist-panel th { background: #f1f5f9; font-size: .7rem; }
+    .hist-panel td { padding: .45rem .75rem; }
+    .tag-suma  { color: var(--ok);    font-weight: 600; }
+    .tag-resta { color: var(--danger); font-weight: 600; }
+    .tag-ubicacion { color: var(--accent); font-weight: 600; }
+
+    /* ── Modales ── */
+    .modal-body-scroll { flex: 1; overflow-y: auto; padding-right: .25rem; }
+    .modal-body-scroll::-webkit-scrollbar { width: 5px; }
+    .modal-body-scroll::-webkit-scrollbar-track { background: transparent; }
+    .modal-body-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+    .overlay { position: fixed; inset: 0; background: rgba(15,23,42,.4); backdrop-filter: blur(3px); display: none; place-items: center; z-index: 200; padding: 1rem; overflow-y: auto; }
+    .overlay.active { display: grid; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; width: 100%; max-width: 520px; padding: 1.75rem; box-shadow: 0 20px 40px rgba(0,0,0,.15); animation: slideUp .2s ease; margin: auto; }
+    @keyframes slideUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+    .modal-header h2 { font-size: 1rem; font-weight: 700; color: var(--txt); }
+    .btn-close { width: 28px; height: 28px; border: none; border-radius: 6px; background: transparent; color: var(--txt-3); font-size: 1rem; cursor: pointer; display: grid; place-items: center; transition: background .15s, color .15s; }
+    .btn-close:hover { background: var(--bg); color: var(--danger); }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; }
+    .form-group { display: flex; flex-direction: column; gap: .35rem; }
+    .form-group.full { grid-column: 1 / -1; }
+    label { font-size: .75rem; font-weight: 600; color: var(--txt-2); }
+    input[type="text"], input[type="number"], input[type="date"], input[type="password"], select, textarea { padding: .55rem .8rem; border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); color: var(--txt); font-family: var(--sans); font-size: .875rem; outline: none; transition: border-color .15s, box-shadow .15s; width: 100%; }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+    textarea { resize: vertical; min-height: 70px; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+    .btn-cancel { padding: .55rem 1rem; border: 1px solid var(--border); border-radius: var(--r); background: transparent; color: var(--txt-2); font-family: var(--sans); font-size: .875rem; cursor: pointer; transition: background .15s; }
+    .btn-cancel:hover { background: var(--bg); }
+
+    /* Pestañas */
+    .tabs { display: grid; border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; margin-bottom: 1.1rem; }
+    .tabs.two { grid-template-columns: 1fr 1fr; }
+    .tab-btn { flex: 1; padding: .55rem; background: var(--bg); border: none; font-family: var(--sans); font-size: .85rem; font-weight: 500; color: var(--txt-2); cursor: pointer; transition: all .15s; }
+    .tab-btn.active { background: var(--accent); color: #fff; }
+    .tab-panel { display: none; } .tab-panel.active { display: block; }
+
+    /* Botones suma/resta */
+    .move-btns { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+    .btn-move { padding: .65rem; border-radius: var(--r); border: 2px solid var(--border); background: var(--bg); font-family: var(--sans); font-weight: 600; font-size: .875rem; cursor: pointer; transition: all .15s; color: var(--txt-2); }
+    .btn-move.suma.active  { border-color: var(--ok);    background: var(--ok-lt);    color: var(--ok); }
+    .btn-move.resta.active { border-color: var(--danger); background: var(--danger-lt); color: var(--danger); }
+
+    /* Info box */
+    .info-box { padding: .6rem .85rem; background: var(--bg); border-radius: var(--r); font-family: var(--mono); font-size: .82rem; color: var(--txt-2); margin-bottom: 1rem; line-height: 1.6; }
+
+    /* Grid 4 campos ubicación */
+    .ubic-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: .4rem; }
+    .ubic-row select { font-family: var(--mono); font-size: .82rem; }
+
+    /* Tabla usuarios */
+    .rol-chip { display: inline-block; padding: .2rem .6rem; border-radius: 12px; font-size: .72rem; font-weight: 700; }
+
+    @media (max-width: 640px) {
+      .stats { padding-left: 1rem; padding-right: 1rem; gap: .3rem; }
+      .table-wrap { margin-left: 1rem; margin-right: 1rem; }
+      .form-grid { grid-template-columns: 1fr; }
+      .stat-card { padding: .25rem .5rem; }
+      .ubic-row { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══ PANTALLA DE LOGIN ══ -->
+  <div id="login-screen">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="login-logo-icon">💻</div>
+        <div><h1>Inventario Taller</h1><p>Gestión de equipos</p></div>
+      </div>
+      <div id="login-error" class="login-error"></div>
+      <div class="login-field">
+        <label>Usuario</label>
+        <input type="text" id="login-user" placeholder="admin" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()" />
+      </div>
+      <div class="login-field">
+        <label>Contraseña</label>
+        <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()" />
+      </div>
+      <button class="btn-login" onclick="hacerLogin()">Entrar →</button>
+      <p class="login-hint">Demo: admin / password · carlos / password · pedro / password</p>
+    </div>
+  </div>
+
+  <!-- ══ APLICACIÓN PRINCIPAL ══ -->
+  <div id="app">
+
+  <!-- CABECERA -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">💻</div>
+      <div><h1>Inventario Taller</h1><p>Gestión de equipos del taller</p></div>
+    </div>
+    <div class="header-right">
+      <span id="fecha-header"></span>
+      <div class="user-pill" onclick="abrirPerfil()" title="Ajustes de cuenta">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <span id="user-nombre" style="font-weight:600">—</span>
+        <span class="rol-badge" id="user-rol-badge"></span>
+      </div>
+      <button class="btn-ghost" title="Cerrar sesión" onclick="cerrarSesion()" style="font-size:.8rem;padding:.4rem .7rem">Salir ↩</button>
+    </div>
+  </header>
+
+  <div class="api-banner" id="api-banner">⚠️ <span id="api-banner-msg"></span></div>
+
+  <!-- ESTADÍSTICAS -->
+  <section class="stats">
+    <div class="stat-card s-total"><span class="stat-icon">🖥️</span><span class="stat-label">Total equipos</span>  <span class="stat-value" id="st-total">—</span></div>
+    <div class="stat-card s-ok">   <span class="stat-icon">✅</span><span class="stat-label">Activos</span>        <span class="stat-value" id="st-activos">—</span></div>
+    <div class="stat-card s-warn"> <span class="stat-icon">🔧</span><span class="stat-label">En reparación</span> <span class="stat-value" id="st-reparacion">—</span></div>
+    <div class="stat-card s-danger"><span class="stat-icon">🗑️</span><span class="stat-label">Baja</span>          <span class="stat-value" id="st-baja">—</span></div>
+    <div class="stat-card s-units"><span class="stat-icon">📦</span><span class="stat-label">Unidades totales</span><span class="stat-value" id="st-unidades">—</span></div>
+  </section>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar" style="flex-direction:column;align-items:stretch;gap:.5rem">
+    <!-- Fila 1: búsqueda + filtros + reset -->
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+      <div class="search-wrap" style="flex:2;min-width:180px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="busqueda" placeholder="Buscar por nombre, S/N o ubicación…" oninput="renderTabla()" />
+      </div>
+      <select id="filtro-cat" onchange="renderTabla()" style="flex:1;min-width:140px">
+        <option value="">Todas las categorías</option>
+      </select>
+      <select id="filtro-est" onchange="renderTabla()" style="flex:1;min-width:130px">
+        <option value="">Todos los estados</option>
+        <option>Activo</option><option>En reparación</option><option>Baja</option>
+      </select>
+      <button class="btn-secondary" title="Limpiar filtros" onclick="resetFiltros()" style="display:flex;align-items:center;gap:.35rem;white-space:nowrap">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+        Reiniciar
+      </button>
+      <button class="btn-ghost" title="Recargar" onclick="cargarTodo()">↻</button>
+    </div>
+    <!-- Fila 2: acciones -->
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+      <button class="btn-secondary" onclick="abrirModalUbicaciones()" id="btn-ubicaciones">📍 Ubicaciones</button>
+      <button class="btn-secondary" id="btn-usuarios" onclick="abrirModalUsuarios()" style="display:none">👥 Usuarios</button>
+      <button class="btn-primary" onclick="abrirModalEquipo()" id="btn-nuevo-equipo">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Añadir equipo
+      </button>
+    </div>
+  </div>
+
+  <div class="loading" id="loading"><div class="spinner"></div>Cargando datos…</div>
+
+  <!-- TABLA -->
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th onclick="ordenar('id')">ID ↕</th>
+        <th onclick="ordenar('nombre')">Nombre / Modelo ↕</th>
+        <th onclick="ordenar('categoria')">Categoría ↕</th>
+        <th onclick="ordenar('subcategoria')">Subcategoría ↕</th>
+        <th onclick="ordenar('estado')">Estado ↕</th>
+        <th onclick="ordenar('ubicacion_label')">Ubicación ↕</th>
+        <th onclick="ordenar('cantidad')">Uds ↕</th>
+        <th>Especificaciones</th>
+        <th>Acciones</th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  </div><!-- /app -->
+
+  <!-- ══ MODAL: EQUIPO ══ -->
+  <div class="overlay" id="overlay-equipo" onclick="cerrarSiOverlay(event,'overlay-equipo')">
+    <div class="modal" style="max-width:560px">
+      <div class="modal-header">
+        <h2 id="equipo-titulo">Nuevo equipo</h2>
+        <button class="btn-close" onclick="cerrarModal('overlay-equipo')">✕</button>
+      </div>
+      <div class="form-grid">
+        <div class="form-group full"><label>Nombre / Modelo *</label>
+          <input type="text" id="f-nombre" placeholder="Ej: Dell OptiPlex 7090" /></div>
+
+        <div class="form-group">
+          <label style="display:flex;justify-content:space-between;align-items:center">
+            Categoría *
+            <button type="button" id="btn-nueva-cat" onclick="mostrarNuevaCat()" style="font-size:.72rem;padding:.15rem .45rem;border:1px solid var(--accent);border-radius:5px;background:var(--accent-lt);color:var(--accent);cursor:pointer;font-weight:600">+ Nueva</button>
+          </label>
+          <select id="f-cat" onchange="cargarSubcategorias(this.value)">
+            <option value="">— Selecciona categoría —</option>
+          </select>
+          <div id="nueva-cat-wrap" style="display:none;margin-top:.35rem;display:none">
+            <div style="display:flex;gap:.35rem">
+              <input type="text" id="nueva-cat-input" placeholder="Nombre de la nueva categoría" style="flex:1" />
+              <button type="button" onclick="crearCategoria()" class="btn-primary" style="padding:.45rem .65rem;font-size:.8rem;white-space:nowrap">Crear</button>
+              <button type="button" onclick="ocultarNuevaCat()" class="btn-cancel" style="padding:.45rem .5rem;font-size:.8rem">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group"><label>Estado *</label>
+          <select id="f-estado"><option>Activo</option><option>En reparación</option><option>Baja</option></select></div>
+
+        <div class="form-group">
+          <label style="display:flex;justify-content:space-between;align-items:center">
+            Subcategoría
+            <button type="button" id="btn-nueva-subcat" onclick="mostrarNuevaSubcat()" style="font-size:.72rem;padding:.15rem .45rem;border:1px solid var(--ok);border-radius:5px;background:var(--ok-lt);color:var(--ok);cursor:pointer;font-weight:600">+ Nueva</button>
+          </label>
+          <select id="f-subcat">
+            <option value="">— Selecciona primero una categoría —</option>
+          </select>
+          <div id="nueva-subcat-wrap" style="display:none;margin-top:.35rem">
+            <div style="display:flex;gap:.35rem">
+              <input type="text" id="nueva-subcat-input" placeholder="Nombre de la subcategoría" style="flex:1" />
+              <button type="button" onclick="crearSubcategoria()" class="btn-primary" style="padding:.45rem .65rem;font-size:.8rem;white-space:nowrap;background:var(--ok)">Crear</button>
+              <button type="button" onclick="ocultarNuevaSubcat()" class="btn-cancel" style="padding:.45rem .5rem;font-size:.8rem">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group"><label>Número de serie</label>
+          <input type="text" id="f-sn" placeholder="SN-2024-001" /></div>
+
+        <div class="form-group"><label>Cantidad *</label>
+          <input type="number" id="f-cantidad" value="1" min="0" /></div>
+
+        <div class="form-group"><label>Fecha de alta</label>
+          <input type="date" id="f-fecha" /></div>
+
+        <div class="form-group full"><label>Especificaciones</label>
+          <textarea id="f-especificaciones" placeholder="CPU, RAM, almacenamiento, características técnicas…" style="min-height:60px"></textarea></div>
+
+        <div class="form-group"><label>Proveedor</label>
+          <select id="f-proveedor"><option value="">— Sin proveedor —</option></select></div>
+
+        <div class="form-group"><label>Operario</label>
+          <select id="f-operario"><option value="">— Selecciona operario —</option></select></div>
+
+        <div class="form-group full">
+          <label>Ubicaciones <small style="font-weight:400;color:var(--txt-3)">(puede añadir varias con cantidad en cada una)</small></label>
+          <div id="f-ubicaciones-list" style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:.4rem"></div>
+          <div style="display:flex;gap:.5rem;align-items:center">
+            <select id="f-ubicacion-id" style="flex:1;font-family:var(--mono);font-size:.82rem">
+              <option value="">— Selecciona ubicación —</option>
+            </select>
+            <input type="number" id="f-ubicacion-cant" placeholder="Uds" min="1" value="1" style="width:70px" />
+            <button type="button" class="btn-secondary" style="padding:.45rem .7rem;font-size:.8rem;white-space:nowrap" onclick="addUbicacionLinea()">+ Añadir</button>
+            <button type="button" class="btn-secondary" style="padding:.45rem .7rem;font-size:.8rem;white-space:nowrap" onclick="abrirModalUbicaciones()">+ Nueva</button>
+          </div>
+        </div>
+
+        <div class="form-group full"><label>Notas / Observaciones</label>
+          <textarea id="f-notas" placeholder="Información adicional…"></textarea></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="cerrarModal('overlay-equipo')">Cancelar</button>
+        <button class="btn-primary" onclick="guardarEquipo()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: MOVIMIENTOS / UBICACIÓN ══ -->
+  <div class="overlay" id="overlay-move" onclick="cerrarSiOverlay(event,'overlay-move')">
+    <div class="modal" style="max-width:480px;display:flex;flex-direction:column;max-height:90vh">
+      <div class="modal-header">
+        <h2>Gestionar equipo</h2>
+        <button class="btn-close" onclick="cerrarModal('overlay-move')">✕</button>
+      </div>
+      <div class="modal-body-scroll">
+      <div class="info-box" id="move-info"></div>
+
+      <div class="tabs" style="grid-template-columns:repeat(3,1fr)">
+        <button class="tab-btn active" onclick="cambiarTab('unidades')">📦 Mover unidades</button>
+        <button class="tab-btn"        onclick="cambiarTab('ubicacion')">📍 Cambiar ubicación</button>
+        <button class="tab-btn"        onclick="cambiarTab('separar')">✂️ Separar ubicaciones</button>
+      </div>
+
+      <!-- PESTAÑA 1: unidades -->
+      <div class="tab-panel active" id="tab-unidades">
+        <div class="form-group" style="margin-bottom:.85rem"><label>Tipo</label>
+          <div class="move-btns">
+            <button class="btn-move suma active" id="btn-suma"  onclick="selMovimiento('suma')">▲ Entrada</button>
+            <button class="btn-move resta"       id="btn-resta" onclick="selMovimiento('resta')">▼ Salida</button>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:.85rem"><label>Cantidad</label>
+          <input type="number" id="move-cant" value="1" min="1" /></div>
+        <div class="form-group" style="margin-bottom:.85rem"><label>Operario</label>
+          <select id="move-operario"><option value="">— Selecciona operario —</option></select></div>
+        <div class="form-group" id="wrap-proveedor" style="margin-bottom:.5rem"><label>Proveedor</label>
+          <select id="move-proveedor"><option value="">— Sin proveedor —</option></select></div>
+        <div class="form-group" id="wrap-cliente" style="margin-bottom:.5rem;display:none"><label>Cliente</label>
+          <select id="move-cliente"><option value="">— Sin cliente —</option></select></div>
+      </div>
+
+      <!-- PESTAÑA 2: ubicación -->
+      <div class="tab-panel" id="tab-ubicacion">
+        <div class="form-group" style="margin-bottom:.85rem"><label>Nueva ubicación</label>
+          <select id="move-ubicacion-id" style="font-family:var(--mono)">
+            <option value="">— Sin ubicación —</option>
+          </select></div>
+        <div class="form-group" style="margin-bottom:.5rem"><label>Operario que realiza el cambio</label>
+          <select id="move-operario-ubic"><option value="">— Selecciona operario —</option></select></div>
+      </div>
+
+      <!-- PESTAÑA 3: separar -->
+      <div class="tab-panel" id="tab-separar">
+        <p style="font-size:.78rem;color:var(--txt-2);margin-bottom:.75rem">
+          Distribuye las unidades del equipo en múltiples ubicaciones. Las líneas deben sumar el stock total.
+        </p>
+        <p style="font-size:.75rem;color:var(--txt-2);margin-bottom:.5rem;margin-top:-.25rem">
+          Puedes asignar un estado distinto a cada línea.
+        </p>
+        <div id="sep-lineas" style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:.5rem"></div>
+        <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.75rem">
+          <select id="sep-ubic" style="flex:1;font-family:var(--mono);font-size:.82rem">
+            <option value="">— Ubicación —</option>
+          </select>
+          <input type="number" id="sep-cant" placeholder="Uds" min="1" value="1" style="width:70px" />
+          <button type="button" class="btn-secondary" style="padding:.45rem .65rem;font-size:.8rem" onclick="addSepLinea()">+ Añadir</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem .6rem;background:var(--bg);border-radius:var(--r);font-size:.82rem">
+          <span style="color:var(--txt-2)">Total asignado:</span>
+          <span id="sep-total" style="font-family:var(--mono);font-weight:700;color:var(--accent)">0 / 0 uds</span>
+        </div>
+        <div class="form-group" style="margin-top:.75rem"><label>Operario</label>
+          <select id="sep-operario"><option value="">— Selecciona operario —</option></select></div>
+      </div>
+
+      </div><!-- /modal-body-scroll -->
+      <div class="modal-footer">
+        <button class="btn-cancel"  onclick="cerrarModal('overlay-move')">Cancelar</button>
+        <button class="btn-primary" id="btn-aplicar" onclick="aplicarAccion()">Aplicar movimiento</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: GESTIÓN DE UBICACIONES ══ -->
+  <div class="overlay" id="overlay-ubicaciones" onclick="cerrarSiOverlay(event,'overlay-ubicaciones')">
+    <div class="modal" style="max-width:460px">
+      <div class="modal-header">
+        <h2>📍 Ubicaciones</h2>
+        <button class="btn-close" onclick="cerrarModal('overlay-ubicaciones')">✕</button>
+      </div>
+      <p style="font-size:.82rem;color:var(--txt-2);margin-bottom:.85rem">
+        Selecciona los 4 campos para crear una nueva ubicación.
+      </p>
+      <div class="form-group" style="margin-bottom:.75rem">
+        <label>Calle – Lado – Hueco – Altura</label>
+        <div class="ubic-row">
+          <select id="nu-calle"  onchange="actualizarPreview()"><option value="">Calle</option></select>
+          <select id="nu-lado"   onchange="actualizarPreview()"><option value="">Lado</option></select>
+          <select id="nu-hueco"  onchange="actualizarPreview()"><option value="">Hueco</option></select>
+          <select id="nu-altura" onchange="actualizarPreview()"><option value="">Altura</option></select>
+        </div>
+      </div>
+      <div style="margin-bottom:1rem;display:flex;align-items:center;gap:.75rem">
+        <span style="font-size:.8rem;color:var(--txt-2)">Vista previa:</span>
+        <span id="ubic-preview" style="font-family:var(--mono);font-size:1rem;font-weight:700;color:var(--accent);background:var(--accent-lt);padding:.2rem .65rem;border-radius:5px">—</span>
+      </div>
+      <button class="btn-primary" style="width:100%;justify-content:center;margin-bottom:1.25rem" onclick="crearUbicacion()">
+        + Crear ubicación
+      </button>
+      <div style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--txt-3);margin-bottom:.5rem">Ubicaciones existentes</div>
+      <div id="lista-ubicaciones" style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r)">
+        <div style="padding:1rem;text-align:center;color:var(--txt-3);font-size:.85rem">Cargando…</div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="cerrarModal('overlay-ubicaciones')">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: GESTIÓN DE USUARIOS (solo admin) ══ -->
+  <div class="overlay" id="overlay-usuarios" onclick="cerrarSiOverlay(event,'overlay-usuarios')">
+    <div class="modal" style="max-width:680px">
+      <div class="modal-header">
+        <h2>👥 Gestión de usuarios</h2>
+        <button class="btn-close" onclick="cerrarModal('overlay-usuarios')">✕</button>
+      </div>
+
+      <!-- Formulario nuevo usuario -->
+      <div id="form-nuevo-usuario" style="background:var(--bg);border-radius:var(--r);padding:1rem;margin-bottom:1rem">
+        <div style="font-size:.78rem;font-weight:700;color:var(--txt-2);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.05em">➕ Nuevo usuario del sistema</div>
+        <div style="font-size:.76rem;color:var(--txt-2);background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:.5rem .75rem;margin-bottom:.75rem;line-height:1.5">
+          ⚠️ Los usuarios MySQL (creados con <code>CREATE USER</code>) son independientes del acceso a esta aplicación web. Para que un operario pueda entrar aquí debes crearlo desde este formulario.
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem">
+          <div class="form-group full"><label>Empleado *</label>
+            <select id="nu-empleado" onchange="rellenarDesdeEmpleado()">
+              <option value="">— Selecciona un empleado —</option>
+            </select></div>
+          <div class="form-group"><label>Usuario para login *</label>
+            <input type="text" id="nu-usuario" placeholder="Ej: juan" /></div>
+          <div class="form-group"><label>Contraseña * (mín. 4 caract.)</label>
+            <input type="password" id="nu-password" placeholder="••••••••" /></div>
+          <div class="form-group full"><label>Rol</label>
+            <select id="nu-rol">
+              <option value="admin">🔴 Administrador — acceso total</option>
+              <option value="tecnico">🔵 Técnico — crear/editar equipos</option>
+              <option value="usuario" selected>🟢 Usuario — gestionar stock</option>
+              <option value="invitado">⚪ Invitado — solo lectura</option>
+            </select></div>
+        </div>
+        <button class="btn-primary" style="margin-top:.75rem" onclick="crearUsuario()">✅ Crear usuario</button>
+      </div>
+
+      <!-- Lista de usuarios -->
+      <div id="lista-usuarios-wrap" style="max-height:340px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r)">
+        <div style="padding:1.5rem;text-align:center;color:var(--txt-3);font-size:.85rem">Cargando…</div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="cerrarModal('overlay-usuarios')">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: PERFIL / CAMBIAR CONTRASEÑA ══ -->
+  <div class="overlay" id="overlay-perfil" onclick="cerrarSiOverlay(event,'overlay-perfil')">
+    <div class="modal" style="max-width:380px">
+      <div class="modal-header">
+        <h2>👤 Mi cuenta</h2>
+        <button class="btn-close" onclick="cerrarModal('overlay-perfil')">✕</button>
+      </div>
+      <div id="perfil-info" style="margin-bottom:1.1rem;padding:.75rem;background:var(--bg);border-radius:var(--r);font-size:.9rem;line-height:1.8"></div>
+      <div style="font-size:.78rem;font-weight:700;color:var(--txt-2);margin-bottom:.6rem;text-transform:uppercase">Cambiar contraseña</div>
+      <div class="form-group" style="margin-bottom:.7rem"><label>Contraseña actual</label>
+        <input type="password" id="perfil-pass-actual" placeholder="••••••••" /></div>
+      <div class="form-group" style="margin-bottom:.7rem"><label>Nueva contraseña</label>
+        <input type="password" id="perfil-pass-nueva" placeholder="••••••••" /></div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="cerrarModal('overlay-perfil')">Cancelar</button>
+        <button class="btn-primary" onclick="cambiarPassword()">Guardar contraseña</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ JAVASCRIPT ══ -->
+  <script>
+    const BASE_URL = '/inventaller/api';
+
+    // ── Estado global ────────────────────────
+    let inventario   = [];
+    let ubicaciones  = [];
+    let opcionesUbic = { calles:[], lados:[], huecos:[], alturas:[] };
+    let sortCol = 'id', sortAsc = true;
+    let editId  = null, moveId = null, moveEstado = 'Activo', moveType = 'suma', tabActiva = 'unidades';
+    let fUbicLineas = [];
+    let sepLineas   = [];
+
+    // ── Sesión ───────────────────────────────
+    let sesion = null; // { token, usuario, nombre, rol }
+
+    function getToken() { return localStorage.getItem('inv_token'); }
+    function setToken(t) { localStorage.setItem('inv_token', t); }
+    function clearToken() { localStorage.removeItem('inv_token'); }
+
+    // ── Helpers UI ────────────────────────────
+    const mostrarCarga = v => document.getElementById('loading').classList.toggle('visible', v);
+    function mostrarError(msg) {
+      const b = document.getElementById('api-banner');
+      document.getElementById('api-banner-msg').textContent = msg;
+      b.classList.add('visible');
+      setTimeout(() => b.classList.remove('visible'), 7000);
+    }
+
+    // ── Fetch helpers ─────────────────────────
+    function authHeaders() {
+      const t = getToken();
+      return t ? { 'Content-Type':'application/json', 'Authorization':`Bearer ${t}` } : { 'Content-Type':'application/json' };
+    }
+    async function apiGet(ep) {
+      const r = await fetch(`${BASE_URL}/${ep}`, { headers: authHeaders() });
+      if (r.status === 401 && !ep.startsWith('auth')) { cerrarSesion(true); throw new Error('No autenticado'); }
+      if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e.error||`HTTP ${r.status}`); }
+      return r.json();
+    }
+    async function apiPost(ep, data) {
+      const r = await fetch(`${BASE_URL}/${ep}`, { method:'POST', headers: authHeaders(), body:JSON.stringify(data) });
+      if (r.status === 401 && !ep.startsWith('auth')) { cerrarSesion(true); throw new Error('No autenticado'); }
+      if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e.error||`HTTP ${r.status}`); }
+      return r.json();
+    }
+    async function apiPut(ep, id, data) {
+      const r = await fetch(`${BASE_URL}/${ep}?id=${id}`, { method:'PUT', headers: authHeaders(), body:JSON.stringify(data) });
+      if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e.error||`HTTP ${r.status}`); }
+      return r.json();
+    }
+    async function apiDelete(ep, id) {
+      const r = await fetch(`${BASE_URL}/${ep}?id=${id}`, { method:'DELETE', headers: authHeaders() });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    }
+
+    // ── LOGIN / LOGOUT ────────────────────────
+    async function hacerLogin() {
+      const user = document.getElementById('login-user').value.trim();
+      const pass = document.getElementById('login-pass').value;
+      const errEl = document.getElementById('login-error');
+      errEl.classList.remove('visible');
+      if (!user || !pass) { errEl.textContent='Introduce usuario y contraseña.'; errEl.classList.add('visible'); return; }
+      try {
+        const btn = document.querySelector('.btn-login');
+        btn.textContent = 'Entrando…'; btn.disabled = true;
+        const res = await fetch(`${BASE_URL}/auth.php`, {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json' },
+          body: JSON.stringify({ accion:'login', usuario: user, password: pass })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error de autenticación');
+        setToken(data.token);
+        sesion = data;
+        mostrarApp();
+        await cargarTodo();
+      } catch(e) {
+        errEl.textContent = e.message;
+        errEl.classList.add('visible');
+      } finally {
+        const btn = document.querySelector('.btn-login');
+        btn.textContent = 'Entrar →'; btn.disabled = false;
+      }
+    }
+
+    function mostrarApp() {
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('app').classList.add('visible');
+      // Actualizar UI con datos del usuario
+      const ini = (sesion.nombre||'?')[0].toUpperCase();
+      document.getElementById('user-avatar').textContent  = ini;
+      document.getElementById('user-nombre').textContent  = sesion.nombre;
+      const rb = document.getElementById('user-rol-badge');
+      rb.textContent  = sesion.rol;
+      rb.className    = `rol-badge rol-${sesion.rol}`;
+      // Permisos UI
+      aplicarPermisosUI();
+    }
+
+    function aplicarPermisosUI() {
+      const rol = sesion?.rol || 'invitado';
+      const puedeEditar   = ['admin','tecnico'].includes(rol);
+      const puedeCrear    = ['admin','tecnico','usuario'].includes(rol);
+      const puedeStock    = ['admin','tecnico','usuario'].includes(rol);
+      const esAdmin       = rol === 'admin';
+      // Botón añadir equipo
+      const btnNew = document.getElementById('btn-nuevo-equipo');
+      if (btnNew) btnNew.style.display = puedeCrear ? '' : 'none';
+      // Botón usuarios
+      const btnU = document.getElementById('btn-usuarios');
+      if (btnU) btnU.style.display = esAdmin ? '' : 'none';
+      // Botones nueva categoría / subcategoría (solo admin y tecnico)
+      ['btn-nueva-cat','btn-nueva-subcat'].forEach(bid => {
+        const b = document.getElementById(bid);
+        if (b) b.style.display = puedeEditar ? '' : 'none';
+      });
+    }
+
+    async function cerrarSesion(silencioso = false) {
+      if (!silencioso) {
+        try { await fetch(`${BASE_URL}/auth.php`, { method:'POST', headers: authHeaders(), body: JSON.stringify({accion:'logout'}) }); } catch {}
+      }
+      clearToken();
+      sesion = null;
+      document.getElementById('login-screen').classList.remove('hidden');
+      document.getElementById('app').classList.remove('visible');
+      document.getElementById('login-pass').value = '';
+    }
+
+    async function verificarSesionGuardada() {
+      const token = getToken();
+      if (!token) return false;
+      try {
+        const r = await fetch(`${BASE_URL}/auth.php`, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!r.ok) { clearToken(); return false; }
+        const data = await r.json();
+        if (!data.valido) { clearToken(); return false; }
+        sesion = { token, ...data };
+        return true;
+      } catch { clearToken(); return false; }
+    }
+
+    // ── Perfil / cambiar contraseña ───────────
+    function abrirPerfil() {
+      const el = document.getElementById('perfil-info');
+      const rolesLabel = { admin:'🔴 Administrador', tecnico:'🔵 Técnico', usuario:'🟢 Usuario', invitado:'⚪ Invitado' };
+      el.innerHTML = `<strong>${sesion.nombre}</strong><br>Usuario: <code>${sesion.usuario}</code><br>Rol: ${rolesLabel[sesion.rol]||sesion.rol}`;
+      ['perfil-pass-actual','perfil-pass-nueva'].forEach(id=>document.getElementById(id).value='');
+      document.getElementById('overlay-perfil').classList.add('active');
+    }
+    async function cambiarPassword() {
+      const actual = document.getElementById('perfil-pass-actual').value;
+      const nueva  = document.getElementById('perfil-pass-nueva').value;
+      if (!actual || !nueva) { alert('Rellena ambos campos.'); return; }
+      if (nueva.length < 6) { alert('La nueva contraseña debe tener al menos 6 caracteres.'); return; }
+      try {
+        await apiPost('auth.php', { accion:'cambiar_password', password_actual: actual, password_nueva: nueva });
+        alert('✅ Contraseña actualizada correctamente.');
+        cerrarModal('overlay-perfil');
+      } catch(e) { mostrarError(e.message); }
+    }
+
+    // ── Modal Usuarios (admin) ────────────────
+    async function abrirModalUsuarios() {
+      if (sesion?.rol !== 'admin') return;
+      document.getElementById('overlay-usuarios').classList.add('active');
+      // Cargar en paralelo pero de forma independiente para que un fallo
+      // en una no afecte a la otra ni cierre la sesión
+      cargarListaUsuarios();
+      cargarEmpleadosSinUsuario();
+    }
+
+    async function cargarEmpleadosSinUsuario() {
+      const sel = document.getElementById('nu-empleado');
+      if (!sel) return;
+      try {
+        const token = getToken();
+        const r = await fetch(`${BASE_URL}/auth.php`, {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ accion:'listar_empleados_sin_usuario' })
+        });
+        if (!r.ok) return; // no cerrar sesión, solo ignorar
+        const lista = await r.json();
+        if (!Array.isArray(lista)) return;
+        sel.innerHTML = '<option value="">— Selecciona un empleado —</option>' +
+          lista.map(e => {
+            const tieneUsuario = e.usuario_actual;
+            const label = e.nombre
+              + (e.puesto ? ' · ' + e.puesto : '')
+              + (tieneUsuario ? ' ⚠ ya tiene usuario: ' + e.usuario_actual : '');
+            return `<option value="${e.id}" ${tieneUsuario?'style="color:var(--warn)"':''}>${label}</option>`;
+          }).join('');
+      } catch { /* ignorar errores de red */ }
+    }
+
+    async function cargarListaUsuarios() {
+      const wrap = document.getElementById('lista-usuarios-wrap');
+      wrap.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--txt-3)">Cargando…</div>';
+      try {
+        const lista = await apiPost('auth.php', { accion:'listar_usuarios' });
+        if (!lista.length) { wrap.innerHTML='<div style="padding:1rem;text-align:center;color:var(--txt-3)">Sin usuarios.</div>'; return; }
+        const RC = { admin:'background:#fdf4ff;color:#7c3aed', tecnico:'background:#eff4ff;color:#2563eb', usuario:'background:#f0fdf4;color:#16a34a', invitado:'background:#f1f5f9;color:#475569' };
+        wrap.innerHTML = `<table style="width:100%;font-size:.83rem;border-collapse:collapse">
+          <thead><tr style="background:#f8fafc">
+            <th style="padding:.55rem .85rem;text-align:left;font-size:.7rem;color:var(--txt-2);font-weight:600;text-transform:uppercase">Nombre</th>
+            <th style="padding:.55rem .85rem;text-align:left;font-size:.7rem;color:var(--txt-2);font-weight:600;text-transform:uppercase">Login</th>
+            <th style="padding:.55rem .85rem;text-align:left;font-size:.7rem;color:var(--txt-2);font-weight:600;text-transform:uppercase">Rol</th>
+            <th style="padding:.55rem .85rem;text-align:left;font-size:.7rem;color:var(--txt-2);font-weight:600;text-transform:uppercase">Operario</th>
+            <th style="padding:.55rem .85rem;text-align:left;font-size:.7rem;color:var(--txt-2);font-weight:600;text-transform:uppercase">Estado</th>
+            <th style="padding:.55rem .85rem;text-align:left;font-size:.7rem;color:var(--txt-2);font-weight:600;text-transform:uppercase">Acciones</th>
+          </tr></thead>
+          <tbody>${lista.map(u=>`
+            <tr style="border-top:1px solid var(--border)">
+              <td style="padding:.55rem .85rem;font-weight:600">${u.nombre}</td>
+              <td style="padding:.55rem .85rem;font-family:var(--mono);font-size:.8rem;color:var(--txt-2)">${u.usuario}</td>
+              <td style="padding:.55rem .85rem"><span style="display:inline-block;padding:.15rem .55rem;border-radius:10px;font-size:.72rem;font-weight:700;${RC[u.rol]||RC.invitado}">${u.rol}</span></td>
+              <td style="padding:.55rem .85rem;font-size:.8rem;color:var(--txt-2)">${u.empleado_nombre||'—'}</td>
+              <td style="padding:.55rem .85rem"><span style="font-size:.78rem;color:${u.activo?'var(--ok)':'var(--danger)'}">${u.activo?'✅ Activo':'❌ Inactivo'}</span></td>
+              <td style="padding:.55rem .85rem;display:flex;gap:.3rem;flex-wrap:wrap">
+                <button onclick="abrirEditarUsuario(${u.id},'${u.nombre.replace(/'/g,"\'")}','${u.rol}',${u.activo})" style="border:1px solid var(--border);border-radius:5px;background:transparent;cursor:pointer;font-size:.75rem;padding:.2rem .45rem;color:var(--txt-2)" title="Editar">✏️</button>
+                <button onclick="toggleUsuarioActivo(${u.id},${u.activo},'${u.nombre.replace(/'/g,"\'")}')" style="border:1px solid var(--border);border-radius:5px;background:transparent;cursor:pointer;font-size:.75rem;padding:.2rem .45rem;color:var(--txt-2)" title="${u.activo?'Desactivar':'Activar'}">${u.activo?'🔒':'🔓'}</button>
+                ${u.usuario!==sesion.usuario?`<button onclick="eliminarUsuario(${u.id},'${u.nombre.replace(/'/g,"\'")}')" style="border:1px solid #fca5a5;border-radius:5px;background:transparent;cursor:pointer;font-size:.75rem;padding:.2rem .45rem;color:var(--danger)" title="Eliminar">🗑️</button>`:''}
+              </td>
+            </tr>`).join('')}
+          </tbody></table>`;
+      } catch(e) { wrap.innerHTML=`<div style="padding:1rem;color:var(--danger)">${e.message}</div>`; }
+    }
+
+    function rellenarDesdeEmpleado() {
+      const sel    = document.getElementById('nu-empleado');
+      const opt    = sel.options[sel.selectedIndex];
+      const uInput = document.getElementById('nu-usuario');
+      if (opt && opt.value) {
+        // Sugerir nombre de usuario: primera parte del nombre en minúsculas sin tildes
+        const nombre = opt.text.split(' ')[0].toLowerCase()
+          .normalize('NFD').replace(/[̀-ͯ]/g,'');
+        uInput.value = nombre;
+      } else {
+        uInput.value = '';
+      }
+    }
+
+    async function crearUsuario() {
+      const sel      = document.getElementById('nu-empleado');
+      const empId    = sel.value;
+      const nombre   = sel.options[sel.selectedIndex]?.text || '';
+      const usuario2 = document.getElementById('nu-usuario').value.trim();
+      const password = document.getElementById('nu-password').value;
+      const rol      = document.getElementById('nu-rol').value;
+      if (!empId)              { alert('Selecciona un empleado.'); return; }
+      // Avisar si el empleado ya tiene usuario asignado
+      const optSel = sel.options[sel.selectedIndex];
+      if (optSel && optSel.style.color) {
+        if (!confirm(`Este empleado ya tiene un usuario asignado. ¿Quieres crear otro usuario vinculado al mismo empleado?`)) return;
+      }
+      if (!usuario2)           { alert('El usuario de login es obligatorio.'); return; }
+      if (!password)           { alert('La contraseña es obligatoria.'); return; }
+      if (password.length < 4) { alert('La contraseña debe tener al menos 4 caracteres.'); return; }
+      try {
+        await apiPost('auth.php', { accion:'crear_usuario', nombre, usuario2, password, rol, empleado_id: empId });
+        ['nu-usuario','nu-password'].forEach(id=>document.getElementById(id).value='');
+        sel.value = '';
+        await Promise.all([cargarListaUsuarios(), cargarEmpleadosSinUsuario()]);
+        alert('✅ Usuario creado correctamente.');
+      } catch(e) { mostrarError(e.message); }
+    }
+
+    // Modal inline para editar usuario (reset contraseña + rol)
+    function abrirEditarUsuario(id, nombre, rol, activo) {
+      const existente = document.getElementById('modal-editar-usuario');
+      if (existente) existente.remove();
+      const ROLES = ['admin','tecnico','usuario','invitado'];
+      const div = document.createElement('div');
+      div.id = 'modal-editar-usuario';
+      div.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.5);display:grid;place-items:center;z-index:400;padding:1rem';
+      div.innerHTML=`<div style="background:#fff;border-radius:12px;padding:1.5rem;width:100%;max-width:360px;box-shadow:0 20px 40px rgba(0,0,0,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)">
+          <strong style="font-size:.95rem">Editar: ${nombre}</strong>
+          <button onclick="document.getElementById('modal-editar-usuario').remove()" style="border:none;background:transparent;font-size:1rem;cursor:pointer;color:var(--txt-3)">✕</button>
+        </div>
+        <div class="form-group" style="margin-bottom:.75rem"><label>Rol</label>
+          <select id="eu-rol" style="width:100%">
+            ${ROLES.map(r=>`<option value="${r}"${r===rol?' selected':''}>${r}</option>`).join('')}
+          </select></div>
+        <div class="form-group" style="margin-bottom:.75rem"><label>Nueva contraseña <small style="font-weight:400;color:var(--txt-3)">(dejar vacío para no cambiar)</small></label>
+          <input type="password" id="eu-pass" placeholder="mín. 4 caracteres" style="width:100%" /></div>
+        <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem;padding-top:.75rem;border-top:1px solid var(--border)">
+          <button onclick="document.getElementById('modal-editar-usuario').remove()" class="btn-cancel">Cancelar</button>
+          <button onclick="guardarEdicionUsuario(${id},'${nombre.replace(/'/g,"\'")}')" class="btn-primary">Guardar</button>
+        </div>
+      </div>`;
+      document.body.appendChild(div);
+    }
+
+    async function guardarEdicionUsuario(id, nombre) {
+      const rol  = document.getElementById('eu-rol').value;
+      const pass = document.getElementById('eu-pass').value;
+      if (pass && pass.length < 4) { alert('La contraseña debe tener al menos 4 caracteres.'); return; }
+      try {
+        const datos = { accion:'editar_usuario', id, nombre, rol };
+        if (pass) datos.password_nueva = pass;
+        await apiPost('auth.php', datos);
+        document.getElementById('modal-editar-usuario').remove();
+        await cargarListaUsuarios();
+        alert('✅ Usuario actualizado.');
+      } catch(e) { mostrarError(e.message); }
+    }
+
+    async function toggleUsuarioActivo(id, activo, nombre) {
+      if (!confirm(`¿${activo?'Desactivar':'Activar'} al usuario "${nombre}"?`)) return;
+      try {
+        await apiPost('auth.php', { accion:'editar_usuario', id, nombre, activo: activo ? 0 : 1 });
+        await cargarListaUsuarios();
+      } catch(e) { mostrarError(e.message); }
+    }
+
+    async function eliminarUsuario(id, nombre) {
+      if (!confirm(`¿Eliminar definitivamente al usuario "${nombre}"?\nEsta acción no se puede deshacer.`)) return;
+      try {
+        await apiPost('auth.php', { accion:'eliminar_usuario', id });
+        await Promise.all([cargarListaUsuarios(), cargarEmpleadosSinUsuario()]);
+      } catch(e) { mostrarError(e.message); }
+    }
+
+    // ── Carga inicial ─────────────────────────
+    let todasCategorias    = [];
+    let todasSubcategorias = [];
+
+    async function cargarTodo() {
+      mostrarCarga(true);
+      try {
+        const [inv, ubics, emps, clis, provs, opts, cats, subcats] = await Promise.all([
+          apiGet('equipos.php'),
+          apiGet('ubicaciones.php'),
+          apiGet('catalogos.php?tabla=empleados'),
+          apiGet('catalogos.php?tabla=clientes'),
+          apiGet('catalogos.php?tabla=proveedores'),
+          apiGet('ubicaciones.php?tipo=opciones'),
+          apiGet('catalogos.php?tabla=categorias'),
+          apiGet('catalogos.php?tabla=subcategorias'),
+        ]);
+        inventario         = inv;
+        ubicaciones        = ubics;
+        opcionesUbic       = opts;
+        todasCategorias    = cats;
+        todasSubcategorias = subcats;
+        poblarSelectsGlobales(emps, clis, provs, ubics, opts);
+        poblarSelectCategorias();
+        // Poblar empleados en modal usuarios
+        const optsE2 = `<option value="">— Sin vincular —</option>` + emps.map(e=>`<option value="${e.id}">${e.nombre}</option>`).join('');
+        const nuEmp = document.getElementById('nu-empleado');
+        if (nuEmp) nuEmp.innerHTML = optsE2;
+        // Poblar filtro categorías toolbar
+        const fc = document.getElementById('filtro-cat');
+        if (fc) {
+          const actual = fc.value;
+          fc.innerHTML = '<option value="">Todas las categorías</option>' +
+            cats.map(cat=>`<option value="${cat.nombre}"${cat.nombre===actual?' selected':''}>${cat.nombre}</option>`).join('');
+        }
+        renderTabla();
+      } catch(e) {
+        mostrarError(`Error al cargar datos: ${e.message}`);
+      } finally {
+        mostrarCarga(false);
+      }
+    }
+
+    function poblarSelectCategorias() {
+      const sel = document.getElementById('f-cat');
+      if (!sel) return;
+      const actual = sel.value;
+      sel.innerHTML = '<option value="">— Selecciona categoría —</option>' +
+        todasCategorias.map(cat=>`<option value="${cat.id}"${cat.id==actual?' selected':''}>${cat.nombre}</option>`).join('');
+    }
+
+    async function cargarSubcategorias(catId) {
+      const sel = document.getElementById('f-subcat');
+      if (!sel) return;
+      if (!catId) { sel.innerHTML='<option value="">— Selecciona primero una categoría —</option>'; return; }
+      const subs = todasSubcategorias.filter(s=>s.categoria_id==catId);
+      sel.innerHTML = '<option value="">— Sin subcategoría —</option>' +
+        subs.map(s=>`<option value="${s.id}">${s.nombre}</option>`).join('');
+    }
+
+    // Crear categoría inline
+    function mostrarNuevaCat() {
+      const w = document.getElementById('nueva-cat-wrap');
+      w.style.display = w.style.display==='none'||!w.style.display ? 'block' : 'none';
+      if (w.style.display==='block') document.getElementById('nueva-cat-input').focus();
+    }
+    function ocultarNuevaCat() {
+      document.getElementById('nueva-cat-wrap').style.display='none';
+      document.getElementById('nueva-cat-input').value='';
+    }
+    async function crearCategoria() {
+      const nombre = document.getElementById('nueva-cat-input').value.trim();
+      if (!nombre) { alert('Escribe un nombre para la categoría.'); return; }
+      try {
+        const nueva = await apiPost('catalogos.php', { accion:'crear_categoria', nombre });
+        todasCategorias.push({ id: nueva.id, nombre });
+        poblarSelectCategorias();
+        document.getElementById('f-cat').value = nueva.id;
+        cargarSubcategorias(nueva.id);
+        ocultarNuevaCat();
+        // Actualizar filtro toolbar
+        const fc = document.getElementById('filtro-cat');
+        if (fc) fc.innerHTML += `<option value="${nombre}">${nombre}</option>`;
+      } catch(e) { mostrarError(e.message); }
+    }
+
+    // Crear subcategoría inline
+    function mostrarNuevaSubcat() {
+      const catId = document.getElementById('f-cat').value;
+      if (!catId) { alert('Selecciona primero una categoría.'); return; }
+      const w = document.getElementById('nueva-subcat-wrap');
+      w.style.display = w.style.display==='none'||!w.style.display ? 'block' : 'none';
+      if (w.style.display==='block') document.getElementById('nueva-subcat-input').focus();
+    }
+    function ocultarNuevaSubcat() {
+      document.getElementById('nueva-subcat-wrap').style.display='none';
+      document.getElementById('nueva-subcat-input').value='';
+    }
+    async function crearSubcategoria() {
+      const catId  = document.getElementById('f-cat').value;
+      const nombre = document.getElementById('nueva-subcat-input').value.trim();
+      if (!catId)  { alert('Selecciona primero una categoría.'); return; }
+      if (!nombre) { alert('Escribe un nombre para la subcategoría.'); return; }
+      try {
+        const nueva = await apiPost('catalogos.php', { accion:'crear_subcategoria', nombre, categoria_id: catId });
+        todasSubcategorias.push({ id: nueva.id, nombre, categoria_id: parseInt(catId) });
+        await cargarSubcategorias(catId);
+        document.getElementById('f-subcat').value = nueva.id;
+        ocultarNuevaSubcat();
+      } catch(e) { mostrarError(e.message); }
+    }
+
+    // ── Poblar desplegables ───────────────────
+    function poblarSelectsGlobales(emps, clis, provs, ubics, opts) {
+      const optsU = ubics.map(u=>`<option value="${u.id}">${u.etiqueta}</option>`).join('');
+      ['f-ubicacion-id','move-ubicacion-id','sep-ubic'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.innerHTML = `<option value="">— Sin ubicación —</option>${optsU}`;
+      });
+      document.getElementById('f-proveedor').innerHTML =
+        `<option value="">— Sin proveedor —</option>` +
+        provs.map(p=>`<option value="${p.id}">${p.nombre}</option>`).join('');
+      const optsE = `<option value="">— Selecciona operario —</option>` +
+        emps.map(e=>`<option value="${e.id}">${e.nombre}</option>`).join('');
+      ['f-operario','move-operario','move-operario-ubic','sep-operario'].forEach(id => {
+        const el = document.getElementById(id); if(el) el.innerHTML = optsE;
+      });
+      // Preseleccionar operario con el empleado de la sesión activa
+      preseleccionarOperario();
+      document.getElementById('move-proveedor').innerHTML =
+        `<option value="">— Sin proveedor —</option>` +
+        provs.map(p=>`<option value="${p.id}">${p.nombre}</option>`).join('');
+      document.getElementById('move-cliente').innerHTML =
+        `<option value="">— Sin cliente —</option>` +
+        clis.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('');
+      poblarCampoUbic('nu-calle',  opts.calles,  'Calle');
+      poblarCampoUbic('nu-lado',   opts.lados,   'Lado');
+      poblarCampoUbic('nu-hueco',  opts.huecos,  'Hueco');
+      poblarCampoUbic('nu-altura', opts.alturas, 'Altura');
+    }
+    function poblarCampoUbic(elId, arr, placeholder) {
+      document.getElementById(elId).innerHTML =
+        `<option value="">${placeholder}</option>` +
+        (arr||[]).map(v=>`<option value="${v}">${v}</option>`).join('');
+    }
+
+    // ── Renderizar tabla ──────────────────────
+    // FIX: separar grupos de equipo con una línea visual
+    function resetFiltros() {
+      document.getElementById('busqueda').value = '';
+      document.getElementById('filtro-cat').value = '';
+      document.getElementById('filtro-est').value = '';
+      renderTabla();
+    }
+
+    function renderTabla() {
+      const busq = document.getElementById('busqueda').value.toLowerCase();
+      const cat  = document.getElementById('filtro-cat').value;
+      const est  = document.getElementById('filtro-est').value;
+
+      let datos = inventario.filter(e => {
+        const lbl = e.ubicacion_label||'';
+        const ok = !busq || (e.nombre||'').toLowerCase().includes(busq) ||
+                            (e.numero_serie||'').toLowerCase().includes(busq) ||
+                            lbl.toLowerCase().includes(busq);
+        return ok && (!cat||e.categoria===cat) && (!est||e.fila_estado===est||e.estado===est);
+      });
+      datos.sort((a,b) => {
+        let va=a[sortCol]??'', vb=b[sortCol]??'';
+        if(typeof va==='number') return sortAsc?va-vb:vb-va;
+        return sortAsc?String(va).localeCompare(String(vb),'es'):String(vb).localeCompare(String(va),'es');
+      });
+
+      const rol = sesion?.rol || 'invitado';
+      const puedeEditar = ['admin','tecnico'].includes(rol);
+      const puedeStock  = ['admin','tecnico','usuario'].includes(rol);
+
+      const tbody = document.getElementById('tbody');
+      if (!datos.length) {
+        tbody.innerHTML=`<tr class="empty-row"><td colspan="9"><span class="empty-icon">🔍</span>No se encontraron equipos.</td></tr>`;
+      } else {
+        let ultimoId = null;
+        tbody.innerHTML = datos.map(e => {
+          // Añadir clase separadora cuando cambia el equipo (id distinto)
+          const esPrimeroDeGrupo = e.id !== ultimoId;
+          ultimoId = e.id;
+          const sepClass = esPrimeroDeGrupo ? '' : 'grupo-sep'; // línea encima de la 2ª+ fila del mismo equipo
+          // La primera fila de un grupo diferente lleva borde visual solo si NO es la primera fila absoluta
+          return `
+          <tr class="${sepClass}">
+            <td class="td-id">${e.id}</td>
+            <td class="td-name">${e.nombre}${e.notas?`<div class="td-sub">${e.notas}</div>`:''}</td>
+            <td>${badgeCat(e.categoria)}</td>
+            <td class="td-mono">${e.subcategoria||'—'}</td>
+            <td>${badgeEstado(e.fila_estado||e.estado)}</td>
+            <td>${renderUbicacionesFila(e)}</td>
+            <td class="td-qty">${e.fila_cantidad??e.cantidad}</td>
+            <td class="td-mono" style="max-width:180px;white-space:pre-wrap;word-break:break-word;font-size:.78rem">${e.especificaciones||'—'}</td>
+            <td><div class="actions">
+              <button class="btn-row r-edit" title="Editar"          onclick="editarEquipo(${e.id})"  ${!puedeEditar?'disabled':''}>✏️</button>
+              <button class="btn-row r-move" title="Mover/Ubicación" onclick="abrirMover(${e.id},'${e.fila_estado||e.estado}')"   ${!puedeStock?'disabled':''}>📦</button>
+              <button class="btn-row"        title="Historial"       onclick="toggleHistorial(${e.id},this)">📋</button>
+              <button class="btn-row r-del"  title="Eliminar"        onclick="eliminar(${e.id})"      ${!puedeEditar?'disabled':''}>🗑️</button>
+            </div></td>
+          </tr>
+          <tr class="hist-panel" id="hist-${e.id}" style="display:none">
+            <td colspan="9">
+              <div class="hist-title">Historial — ${e.nombre}</div>
+              <div id="hist-content-${e.id}">Cargando…</div>
+            </td>
+          </tr>`;
+        }).join('');
+      }
+      actualizarStats(datos);
+    }
+
+    // ── Render ubicaciones de una fila ────────
+    function renderUbicacionesFila(e) {
+      const ubics = e.ubicaciones||[];
+      if (!ubics.length) return e.ubicacion_label
+        ? `<span class="ubic-tag">${e.ubicacion_label}</span>`
+        : '<span style="color:var(--txt-3)">—</span>';
+      const fEstado = e.fila_estado||e.estado;
+      const deEstaFila = ubics.filter(u=>u.estado===fEstado);
+      if (!deEstaFila.length) return '<span style="color:var(--txt-3)">—</span>';
+      return deEstaFila.map(u=>`<span class="ubic-tag" style="margin:.1rem .15rem .1rem 0;display:inline-block">${u.etiqueta}<small style="opacity:.65;margin-left:.25rem">×${u.cantidad}</small></span>`).join('');
+    }
+
+    // ── Badges ────────────────────────────────
+    function badgeCat(cat) {
+      const m={'PC Sobremesa':['b-pc','🖥️'],'Portátil':['b-portatil','💻'],'Monitor':['b-monitor','🖵'],'Impresora':['b-impresora','🖨️'],'Red':['b-red','🔌'],'Otro':['b-otro','📦']};
+      const[cls,ico]=m[cat]||['b-otro','📦'];
+      return `<span class="badge ${cls}">${ico} ${cat||'Sin categoría'}</span>`;
+    }
+    function badgeEstado(est) {
+      const cls=est==='Activo'?'e-activo':est==='En reparación'?'e-reparacion':'e-baja';
+      return `<span class="estado ${cls}"><span class="dot"></span>${est}</span>`;
+    }
+
+    // ── Historial ─────────────────────────────
+    async function toggleHistorial(id) {
+      const row=document.getElementById(`hist-${id}`);
+      const con=document.getElementById(`hist-content-${id}`);
+      if(row.style.display!=='none'){row.style.display='none';return;}
+      row.style.display='table-row'; con.innerHTML='Cargando…';
+      try {
+        const movs = await apiGet(`movimientos.php?equipo_id=${id}`);
+        con.innerHTML = movs.length
+          ? `<table style="width:100%">
+               <thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th><th>Operario</th><th>Proveedor / Cliente</th></tr></thead>
+               <tbody>${movs.map(m=>`<tr>
+                 <td class="td-mono">${m.fecha}</td>
+                 <td class="tag-${m.tipo}">${m.tipo==='suma'?'▲ Entrada':m.tipo==='resta'?'▼ Salida':'📍 Ubicación'}</td>
+                 <td class="td-mono">${
+                   m.tipo==='ubicacion'
+                     ? `${m.ubicacion_origen?`De ${m.ubicacion_origen} &nbsp;→&nbsp; `:''}${m.ubicacion_nueva||'—'}`
+                     : `${m.ubicacion_origen?`De ${m.ubicacion_origen} &nbsp;→&nbsp; `:''}${m.cantidad} uds`
+                 }</td>
+                 <td>${m.empleado||'—'}</td>
+                 <td>${m.tipo==='suma'?(m.proveedor||'—'):m.tipo==='resta'?(m.cliente||'—'):'—'}</td>
+               </tr>`).join('')}</tbody></table>`
+          : `<p style="color:var(--txt-2);font-size:.85rem">Sin movimientos registrados.</p>`;
+      } catch { con.innerHTML=`<p style="color:var(--danger)">Error al cargar historial.</p>`; }
+    }
+
+    // ── Stats ─────────────────────────────────
+    function uniqueIds(arr) { return new Set(arr.map(e=>e.id)).size; }
+    function sumUnits(arr)  { return arr.reduce((s,e)=>s+Number(e.fila_cantidad??e.cantidad),0); }
+    function actualizarStats(filtrados) {
+      const all = inventario;
+      const fil = filtrados||all;
+      const hayFiltro = filtrados && uniqueIds(filtrados) < uniqueIds(all);
+      const fmt = (f,t) => hayFiltro ? `${f} de ${t}` : String(t);
+      document.getElementById('st-total').textContent      = fmt(uniqueIds(fil), uniqueIds(all));
+      document.getElementById('st-activos').textContent    = fmt(fil.filter(e=>(e.fila_estado||e.estado)==='Activo').length,      all.filter(e=>(e.fila_estado||e.estado)==='Activo').length);
+      document.getElementById('st-reparacion').textContent = fmt(fil.filter(e=>(e.fila_estado||e.estado)==='En reparación').length, all.filter(e=>(e.fila_estado||e.estado)==='En reparación').length);
+      document.getElementById('st-baja').textContent       = fmt(fil.filter(e=>(e.fila_estado||e.estado)==='Baja').length,         all.filter(e=>(e.fila_estado||e.estado)==='Baja').length);
+      document.getElementById('st-unidades').textContent   = fmt(sumUnits(fil), sumUnits(all));
+    }
+
+    // ── Ordenar ───────────────────────────────
+    function ordenar(col) { sortAsc=sortCol===col?!sortAsc:true; sortCol=col; renderTabla(); }
+
+    // ── Modal EQUIPO ──────────────────────────
+    function abrirModalEquipo() {
+      if (!['admin','tecnico','usuario'].includes(sesion?.rol)) return;
+      editId=null;
+      document.getElementById('equipo-titulo').textContent='Nuevo equipo';
+      ['f-nombre','f-sn','f-notas','f-especificaciones'].forEach(id=>document.getElementById(id).value='');
+      poblarSelectCategorias();
+      document.getElementById('f-cat').value         = '';
+      document.getElementById('f-subcat').innerHTML  = '<option value="">— Selecciona primero una categoría —</option>';
+      document.getElementById('f-estado').value      = 'Activo';
+      document.getElementById('f-cantidad').value    = 1;
+      document.getElementById('f-fecha').value       = new Date().toISOString().split('T')[0];
+      document.getElementById('f-proveedor').value   = '';
+      document.getElementById('f-operario').value    = '';
+      preseleccionarOperario();
+      ocultarNuevaCat(); ocultarNuevaSubcat();
+      fUbicLineas = [];
+      renderFUbicLineas();
+      document.getElementById('f-ubicacion-id').value   = '';
+      document.getElementById('f-ubicacion-cant').value = 1;
+      document.getElementById('overlay-equipo').classList.add('active');
+    }
+    async function editarEquipo(id) {
+      if (!['admin','tecnico'].includes(sesion?.rol)) return;
+      const e=inventario.find(x=>x.id==id); if(!e) return;
+      editId=id;
+      document.getElementById('equipo-titulo').textContent='Editar equipo';
+      document.getElementById('f-nombre').value    = e.nombre       ||'';
+      document.getElementById('f-sn').value        = e.numero_serie ||'';
+      document.getElementById('f-estado').value    = e.estado       ||'Activo';
+      document.getElementById('f-cantidad').value  = e.cantidad     ||1;
+      document.getElementById('f-fecha').value     = e.fecha_alta   ||'';
+      document.getElementById('f-proveedor').value = e.proveedor_id ||'';
+      document.getElementById('f-operario').value  = '';
+      document.getElementById('f-notas').value     = e.notas        ||'';
+      document.getElementById('f-especificaciones').value = e.especificaciones ||'';
+      poblarSelectCategorias();
+      document.getElementById('f-cat').value = e.categoria_id||'';
+      await cargarSubcategorias(e.categoria_id);
+      document.getElementById('f-subcat').value = e.subcategoria_id||'';
+      ocultarNuevaCat(); ocultarNuevaSubcat();
+      fUbicLineas = e.ubicaciones ? e.ubicaciones.map(u=>({...u})) : (e.ubicacion_id ? [{id: e.ubicacion_id, etiqueta: e.ubicacion_label, cantidad: e.cantidad}] : []);
+      renderFUbicLineas();
+      document.getElementById('f-ubicacion-id').value   = '';
+      document.getElementById('f-ubicacion-cant').value = 1;
+      document.getElementById('overlay-equipo').classList.add('active');
+    }
+    async function guardarEquipo() {
+      const nombre=document.getElementById('f-nombre').value.trim();
+      if(!nombre){alert('El nombre es obligatorio.');return;}
+      const cantTotal = fUbicLineas.length
+        ? fUbicLineas.reduce((s,l)=>s+Number(l.cantidad),0)
+        : (parseInt(document.getElementById('f-cantidad').value)||0);
+      const primeraUbic = fUbicLineas.length ? fUbicLineas[0].id : (document.getElementById('f-ubicacion-id').value||null);
+      const datos={
+        nombre,
+        categoria_id:    parseInt(document.getElementById('f-cat').value)||null,
+        subcategoria_id: parseInt(document.getElementById('f-subcat').value)||null,
+        numero_serie: document.getElementById('f-sn').value.trim()||null,
+        estado:       document.getElementById('f-estado').value,
+        cantidad:     cantTotal,
+        fecha_alta:   document.getElementById('f-fecha').value||null,
+        proveedor_id: document.getElementById('f-proveedor').value||null,
+        empleado_id:  document.getElementById('f-operario').value||null,
+        ubicacion_id: primeraUbic,
+        ubicaciones:  fUbicLineas.length ? fUbicLineas : null,
+        notas:           document.getElementById('f-notas').value.trim()||null,
+        especificaciones: document.getElementById('f-especificaciones').value.trim()||null,
+      };
+      try {
+        editId ? await apiPut('equipos.php',editId,datos) : await apiPost('equipos.php',datos);
+        cerrarModal('overlay-equipo'); await cargarTodo();
+      } catch(e){mostrarError(`Error al guardar: ${e.message}`);}
+    }
+    async function eliminar(id) {
+      if (!['admin','tecnico'].includes(sesion?.rol)) return;
+      const e=inventario.find(x=>x.id==id);
+      if(!confirm(`¿Eliminar "${e?.nombre}"?`)) return;
+      try{await apiDelete('equipos.php',id);await cargarTodo();}
+      catch(e){mostrarError(`Error al eliminar: ${e.message}`);}
+    }
+
+    // Preselecciona todos los selects de operario con el empleado de la sesión
+    function preseleccionarOperario() {
+      let empId = sesion?.empleado_id ? String(sesion.empleado_id) : '';
+      // Si no hay empleado_id vinculado, intentar buscar por nombre en las opciones
+      if (!empId && sesion?.nombre) {
+        const ref = document.getElementById('move-operario');
+        if (ref) {
+          const opt = [...ref.options].find(o => o.text.trim() === sesion.nombre.trim());
+          if (opt) empId = opt.value;
+        }
+      }
+      if (!empId) return;
+      ['f-operario','move-operario','move-operario-ubic','sep-operario'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        // Forzar asignación — si el option existe el valor quedará, si no quedará ''
+        el.value = empId;
+        // Doble verificación: si no coincide ningún option, dejar en blanco
+        if (el.value !== empId) el.value = '';
+      });
+    }
+
+    // ── Modal MOVIMIENTO ──────────────────────
+    function abrirMover(id, filaEstado) {
+      moveId    = id;
+      moveEstado = filaEstado || 'Activo';
+      moveType  = 'suma';
+      cambiarTab('unidades');
+      document.getElementById('btn-suma').classList.add('active');
+      document.getElementById('btn-resta').classList.remove('active');
+      ['move-cant','move-operario','move-operario-ubic','move-proveedor','move-cliente','move-ubicacion-id','sep-operario']
+        .forEach(i=>{const el=document.getElementById(i);if(el)el.value=i==='move-cant'?1:'';});
+      const scEl=document.getElementById('sep-cant'); if(scEl) scEl.value=1;
+      sepLineas=[]; renderSepLineas();
+
+      // Buscar la fila exacta (mismo id Y mismo estado)
+      const e = inventario.find(x => x.id==id && (x.fila_estado||x.estado)==moveEstado)
+             || inventario.find(x => x.id==id);
+      const stockFila  = e?.fila_cantidad ?? e?.cantidad ?? 0;
+      const ubicLabel  = e?.ubicacion_label || '—';
+      const ubicId     = e?.ubicacion_id    || '';
+
+      // move-info: nombre + stock + estado + ubicación actual
+      document.getElementById('move-info').innerHTML =
+        `<strong>${e?.nombre}</strong><br>`+
+        `Stock en esta línea: <b>${stockFila}</b> uds &nbsp;·&nbsp; `+
+        `Estado: <b>${moveEstado}</b> &nbsp;·&nbsp; `+
+        `Ubicación: <b>${ubicLabel}</b>`;
+
+      // Preseleccionar operario con el empleado vinculado a la sesión
+      preseleccionarOperario();
+
+      // Preseleccionar sep-ubic con la ubicación actual de la fila
+      const sepUbicEl = document.getElementById('sep-ubic');
+      if(sepUbicEl && ubicId) sepUbicEl.value = ubicId;
+
+      document.getElementById('overlay-move').classList.add('active');
+    }
+    function cambiarTab(tab) {
+      tabActiva=tab;
+      const modal = document.getElementById('overlay-move');
+      const btns  = modal ? modal.querySelectorAll('.tab-btn') : [];
+      btns.forEach((b,i)=>b.classList.toggle('active',(i===0&&tab==='unidades')||(i===1&&tab==='ubicacion')||(i===2&&tab==='separar')));
+      ['tab-unidades','tab-ubicacion','tab-separar'].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el) el.classList.toggle('active', id==='tab-'+tab);
+      });
+      document.getElementById('btn-aplicar').textContent=tab==='unidades'?'Aplicar movimiento':tab==='ubicacion'?'Guardar ubicación':'Guardar distribución';
+    }
+    function selMovimiento(tipo) {
+      moveType = tipo;
+      document.getElementById('btn-suma').classList.toggle('active', tipo==='suma');
+      document.getElementById('btn-resta').classList.toggle('active', tipo==='resta');
+      // Entrada → proveedor | Salida → cliente
+      document.getElementById('wrap-proveedor').style.display = tipo==='suma'  ? '' : 'none';
+      document.getElementById('wrap-cliente').style.display   = tipo==='resta' ? '' : 'none';
+    }
+    async function aplicarAccion() {
+      if(tabActiva==='unidades') await aplicarMovimiento();
+      else if(tabActiva==='ubicacion') await aplicarCambioUbicacion();
+      else await aplicarSeparacion();
+    }
+    async function aplicarMovimiento() {
+      const cant=parseInt(document.getElementById('move-cant').value);
+      if(!cant||cant<1){alert('Indica una cantidad válida.');return;}
+      try {
+        await apiPost('movimientos.php',{
+          equipo_id:    moveId, tipo: moveType, cantidad: cant,
+          fila_estado:  moveEstado,
+          empleado_id:  document.getElementById('move-operario').value||null,
+          proveedor_id: moveType==='suma'  ? document.getElementById('move-proveedor').value||null : null,
+          cliente_id:   moveType==='resta' ? document.getElementById('move-cliente').value||null   : null,
+        });
+        cerrarModal('overlay-move'); await cargarTodo();
+      } catch(e){mostrarError(`Error al aplicar movimiento: ${e.message}`);}
+    }
+    async function aplicarCambioUbicacion() {
+      const nUbic=document.getElementById('move-ubicacion-id').value;
+      if(!nUbic){alert('Selecciona una ubicación de destino.');return;}
+      try {
+        await apiPost('movimientos.php',{
+          equipo_id:    moveId, tipo:'ubicacion', cantidad:0,
+          fila_estado:  moveEstado,
+          empleado_id:  document.getElementById('move-operario-ubic').value||null,
+          ubicacion_id: nUbic,
+        });
+        cerrarModal('overlay-move'); await cargarTodo();
+      } catch(e){mostrarError(`Error al cambiar ubicación: ${e.message}`);}
+    }
+
+    // ── Multi-ubicación modal equipo ──────────
+    function addUbicacionLinea() {
+      const selEl = document.getElementById('f-ubicacion-id');
+      const uid   = selEl.value;
+      const ulab  = selEl.options[selEl.selectedIndex]?.text || '';
+      const cant  = parseInt(document.getElementById('f-ubicacion-cant').value)||1;
+      if(!uid){alert('Selecciona una ubicación.');return;}
+      if(cant<1){alert('La cantidad debe ser al menos 1.');return;}
+      const exist = fUbicLineas.find(l=>l.id==uid);
+      if(exist){ exist.cantidad+=cant; } else { fUbicLineas.push({id:uid, etiqueta:ulab, cantidad:cant}); }
+      renderFUbicLineas();
+      selEl.value=''; document.getElementById('f-ubicacion-cant').value=1;
+    }
+    function removeUbicLinea(idx) {
+      fUbicLineas.splice(idx,1); renderFUbicLineas();
+    }
+    function renderFUbicLineas() {
+      const cont = document.getElementById('f-ubicaciones-list');
+      if(!fUbicLineas.length){
+        cont.innerHTML='<div style="font-size:.78rem;color:var(--txt-3);padding:.25rem 0">Sin ubicaciones asignadas. Añade una o más abajo.</div>';
+        return;
+      }
+      cont.innerHTML = fUbicLineas.map((l,i)=>`
+        <div style="display:flex;align-items:center;gap:.4rem;padding:.3rem .5rem;background:var(--accent-lt);border:1px solid #bfdbfe;border-radius:6px;font-size:.82rem">
+          <span style="font-family:var(--mono);font-weight:600;color:var(--accent);flex:1">${l.etiqueta}</span>
+          <input type="number" value="${l.cantidad}" min="1" style="width:60px;padding:.25rem .4rem;font-size:.8rem" oninput="fUbicLineas[${i}].cantidad=parseInt(this.value)||1" />
+          <span style="color:var(--txt-3);font-size:.75rem">uds</span>
+          <button onclick="removeUbicLinea(${i})" style="border:none;background:transparent;color:var(--danger);cursor:pointer;font-size:.9rem;padding:.1rem .3rem">✕</button>
+        </div>`).join('');
+    }
+
+    // ── Separar ubicaciones ───────────────────
+    function addSepLinea() {
+      const selEl = document.getElementById('sep-ubic');
+      const uid   = selEl.value;
+      const ulab  = selEl.options[selEl.selectedIndex]?.text || '';
+      const cant  = parseInt(document.getElementById('sep-cant').value)||1;
+      if(!uid){alert('Selecciona una ubicación.');return;}
+      if(cant<1){alert('La cantidad debe ser al menos 1.');return;}
+      const defEst = moveEstado || 'Activo';
+      sepLineas.push({id:uid, etiqueta:ulab, cantidad:cant, estado:defEst});
+      renderSepLineas();
+      selEl.value=''; document.getElementById('sep-cant').value=1;
+    }
+    function removeSepLinea(idx) {
+      sepLineas.splice(idx,1); renderSepLineas();
+    }
+    function renderSepLineas() {
+      const cont = document.getElementById('sep-lineas');
+      if(!cont) return;
+      if(!sepLineas.length){
+        cont.innerHTML='<div style="font-size:.78rem;color:var(--txt-3);padding:.25rem 0">Añade al menos una línea de ubicación.</div>';
+        actualizarSepTotal(); return;
+      }
+      const ESTADOS = ['Activo','En reparación','Baja'];
+      cont.innerHTML = sepLineas.map((l,i)=>`
+        <div style="display:flex;align-items:center;gap:.35rem;padding:.35rem .5rem;background:var(--accent-lt);border:1px solid #bfdbfe;border-radius:6px;font-size:.8rem;flex-wrap:wrap">
+          <span style="font-family:var(--mono);font-weight:600;color:var(--accent);flex:1;min-width:80px">${l.etiqueta}</span>
+          <select data-idx="${i}" class="sep-est-linea" style="font-size:.78rem;padding:.2rem .4rem;width:auto">
+            ${ESTADOS.map(s=>`<option value="${s}" ${(l.estado||'Activo')===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+          <input type="number" data-idx="${i}" value="${l.cantidad}" min="1" style="width:55px;padding:.2rem .35rem;font-size:.8rem" class="sep-cant-linea" />
+          <span style="color:var(--txt-3);font-size:.72rem">uds</span>
+          <button onclick="removeSepLinea(${i})" style="border:none;background:transparent;color:var(--danger);cursor:pointer;font-size:.9rem;padding:.1rem .25rem">✕</button>
+        </div>`).join('');
+      cont.querySelectorAll('.sep-cant-linea').forEach(inp=>{
+        inp.addEventListener('input', ()=>{ const idx=parseInt(inp.dataset.idx); sepLineas[idx].cantidad=parseInt(inp.value)||0; actualizarSepTotal(); });
+      });
+      cont.querySelectorAll('.sep-est-linea').forEach(sel=>{
+        sel.addEventListener('change', ()=>{ const idx=parseInt(sel.dataset.idx); sepLineas[idx].estado=sel.value; });
+      });
+      actualizarSepTotal();
+    }
+    function actualizarSepTotal() {
+      const e = inventario.find(x => x.id==moveId && (x.fila_estado||x.estado)==moveEstado)
+             || inventario.find(x => x.id==moveId);
+      const stock = e?.fila_cantidad ?? e?.cantidad ?? 0;
+      const total = sepLineas.reduce((s,l)=>s+Number(l.cantidad),0);
+      const tEl   = document.getElementById('sep-total');
+      if(tEl){ tEl.textContent=`${total} / ${stock} uds`; tEl.style.color=total===stock?'var(--ok)':total>stock?'var(--danger)':'var(--accent)'; }
+    }
+    async function aplicarSeparacion() {
+      if(!sepLineas.length){alert('Añade al menos una línea de ubicación.');return;}
+      document.querySelectorAll('.sep-cant-linea').forEach(inp=>{
+        const idx=parseInt(inp.dataset.idx); if(!isNaN(idx)) sepLineas[idx].cantidad=parseInt(inp.value)||0;
+      });
+      const e = inventario.find(x => x.id==moveId && (x.fila_estado||x.estado)==moveEstado)
+             || inventario.find(x => x.id==moveId);
+      const stock = e?.fila_cantidad ?? e?.cantidad ?? 0;
+      const total = sepLineas.reduce((s,l)=>s+Number(l.cantidad),0);
+      if(total!==stock){alert(`Las unidades asignadas (${total}) deben coincidir con el stock de esta línea (${stock}).`);return;}
+      document.querySelectorAll('.sep-est-linea').forEach(sel=>{
+        const idx=parseInt(sel.dataset.idx); if(!isNaN(idx)) sepLineas[idx].estado=sel.value;
+      });
+      try {
+        await apiPost('movimientos.php',{
+          equipo_id:    moveId,
+          tipo:         'separacion',
+          fila_estado:  moveEstado,          // estado de la línea origen que se divide
+          empleado_id:  document.getElementById('sep-operario').value||null,
+          lineas:       sepLineas.map(l=>({id: l.id, cantidad: Number(l.cantidad), estado: l.estado||'Activo'})),
+        });
+        cerrarModal('overlay-move'); await cargarTodo();
+      } catch(e){mostrarError(`Error al guardar distribución: ${e.message}`);}
+    }
+
+    // ── Modal UBICACIONES ─────────────────────
+    async function abrirModalUbicaciones() {
+      document.getElementById('overlay-ubicaciones').classList.add('active');
+      await refrescarListaUbicaciones();
+    }
+    async function refrescarListaUbicaciones() {
+      const lista=document.getElementById('lista-ubicaciones');
+      lista.innerHTML='<div style="padding:1rem;text-align:center;color:var(--txt-3);font-size:.85rem">Cargando…</div>';
+      try {
+        const data=await apiGet('ubicaciones.php');
+        ubicaciones=data;
+        lista.innerHTML = data.length
+          ? data.map(u=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem .85rem;border-bottom:1px solid var(--border)">
+              <span style="font-family:var(--mono);font-size:.9rem;font-weight:600;color:var(--accent)">${u.etiqueta}</span>
+              <span style="font-size:.75rem;color:var(--txt-3)">${u.calle} · ${u.lado} · ${u.hueco} · ${u.altura}</span>
+            </div>`).join('')
+          : '<div style="padding:1rem;text-align:center;color:var(--txt-3);font-size:.85rem">No hay ubicaciones todavía.</div>';
+        const optsU=data.map(u=>`<option value="${u.id}">${u.etiqueta}</option>`).join('');
+        ['f-ubicacion-id','move-ubicacion-id','sep-ubic'].forEach(id=>{
+          const el=document.getElementById(id);
+          if(el) el.innerHTML=`<option value="">— Sin ubicación —</option>${optsU}`;
+        });
+      } catch(e){lista.innerHTML=`<div style="padding:1rem;color:var(--danger);font-size:.85rem">Error: ${e.message}</div>`;}
+    }
+    function actualizarPreview() {
+      const c=document.getElementById('nu-calle').value, l=document.getElementById('nu-lado').value;
+      const h=document.getElementById('nu-hueco').value, a=document.getElementById('nu-altura').value;
+      document.getElementById('ubic-preview').textContent=(c&&l&&h&&a)?`${c}-${l}-${h}-${a}`:'—';
+    }
+    async function crearUbicacion() {
+      const calle=document.getElementById('nu-calle').value, lado=document.getElementById('nu-lado').value;
+      const hueco=document.getElementById('nu-hueco').value, altura=document.getElementById('nu-altura').value;
+      if(!calle||!lado||!hueco||!altura){alert('Selecciona los 4 campos.');return;}
+      try {
+        await apiPost('ubicaciones.php',{calle,lado,hueco,altura});
+        ['nu-calle','nu-lado','nu-hueco','nu-altura'].forEach(id=>document.getElementById(id).value='');
+        document.getElementById('ubic-preview').textContent='—';
+        await refrescarListaUbicaciones();
+      } catch(e){mostrarError(`Error al crear ubicación: ${e.message}`);}
+    }
+
+    // ── Cerrar modales ────────────────────────
+    function cerrarModal(id){document.getElementById(id).classList.remove('active');}
+    function cerrarSiOverlay(ev,id){if(ev.target.id===id)cerrarModal(id);}
+
+    // ── Inicio ────────────────────────────────
+    (function actualizarFecha(){
+      const ahora = new Date();
+      const fecha = ahora.toLocaleDateString('es-ES',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+      const hora  = ahora.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      const el = document.getElementById('fecha-header');
+      if (el) el.textContent = fecha + ' · ' + hora;
+      setTimeout(actualizarFecha, 1000);
+    })();
+
+    // Verificar si hay sesión guardada al arrancar
+    (async function init() {
+      const valida = await verificarSesionGuardada();
+      if (valida) {
+        mostrarApp();
+        await cargarTodo();
+      }
+      // Si no hay sesión, se muestra el login (estado por defecto)
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+# Pasar el header Authorization a PHP (necesario en Apache con mod_php)
+RewriteEngine On
+RewriteCond %{HTTP:Authorization} ^(.*)
+RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
+
+# También con CGI/FastCGI
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1

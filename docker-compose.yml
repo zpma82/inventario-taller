@@ -1,0 +1,63 @@
+# =============================================================
+# Inventario Taller — Docker Compose
+# Compatible con CasaOS Custom Install
+# Puerto por defecto: 8085
+# =============================================================
+version: "3.9"
+
+services:
+
+  db:
+    image: mysql:8.0
+    container_name: inventaller_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-RootPass_Cambia1!}
+      MYSQL_DATABASE: inventaller
+    volumes:
+      - inventaller_db:/var/lib/mysql
+      - ./app/sql/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./app/sql/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+      - ./app/sql/03_usuarios.sql:/docker-entrypoint-initdb.d/03_usuarios.sql:ro
+      - ./app/sql/05_vistas.sql:/docker-entrypoint-initdb.d/05_vistas.sql:ro
+      - ./app/sql/06_usuarios_app.sql:/docker-entrypoint-initdb.d/06_usuarios_app.sql:ro
+      - ./app/sql/07_migracion_subcategorias.sql:/docker-entrypoint-initdb.d/07_migracion_subcategorias.sql:ro
+      - ./app/sql/08_especificaciones.sql:/docker-entrypoint-initdb.d/08_especificaciones.sql:ro
+    networks:
+      - inventaller_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-RootPass_Cambia1!}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: inventaller_app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-8085}:80"
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: inventaller
+      DB_USER: almacen_local
+      DB_PASS: CambiaEstaPassword_Remoto1!
+    volumes:
+      - ./app:/var/www/html:ro
+    networks:
+      - inventaller_net
+
+volumes:
+  inventaller_db:
+    name: inventaller_db
+
+networks:
+  inventaller_net:
+    name: inventaller_net
