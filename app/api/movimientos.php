@@ -95,18 +95,16 @@ if ($method === 'GET') {
                     ->execute([$equipo_id]);
             }
 
-            // Insertar cada nueva línea (ya se borraron las del estado origen, no hay duplicados)
-            $ins = $pdo->prepare("
-                INSERT INTO equipo_ubicaciones (equipo_id, ubicacion_id, cantidad, estado)
-                VALUES (?,?,?,?)
-            ");
-            // Mapa explícito: tolerante a NFD/NFC y mayúsculas
+            // Mapa explícito de estados: tolerante a NFD/NFC y mayúsculas
             $mapaEstados = [
                 'activo'        => 'Activo',
                 'en reparación' => 'En reparación',
                 'en reparacion' => 'En reparación',
                 'baja'          => 'Baja',
             ];
+
+            // Validar y normalizar estados antes de tocar la BD
+            $lineasNorm = [];
             foreach ($lineas as $l) {
                 $uid  = (int)($l['id'] ?? 0);
                 $cant = (int)($l['cantidad'] ?? 0);
@@ -115,7 +113,28 @@ if ($method === 'GET') {
                 if ($estNorm === null) {
                     throw new Exception("Estado inválido: '{$estRaw}'. Permitidos: Activo, En reparación, Baja");
                 }
-                if ($uid > 0 && $cant > 0) $ins->execute([$equipo_id, $uid, $cant, $estNorm]);
+                if ($uid > 0 && $cant > 0) {
+                    $lineasNorm[] = ['uid' => $uid, 'cant' => $cant, 'est' => $estNorm];
+                }
+            }
+
+            // Borrar TODAS las líneas del equipo para este estado origen
+            // y también cualquier línea que coincida con ubic+estado destino
+            // para evitar violación de UNIQUE KEY uk_equipo_ubic_estado
+            foreach ($lineasNorm as $ln) {
+                $pdo->prepare("
+                    DELETE FROM equipo_ubicaciones
+                    WHERE equipo_id = ? AND ubicacion_id = ? AND estado = ?
+                ")->execute([$equipo_id, $ln['uid'], $ln['est']]);
+            }
+
+            // Insertar las nuevas líneas (sin posibilidad de duplicado)
+            $ins = $pdo->prepare("
+                INSERT INTO equipo_ubicaciones (equipo_id, ubicacion_id, cantidad, estado)
+                VALUES (?,?,?,?)
+            ");
+            foreach ($lineasNorm as $ln) {
+                $ins->execute([$equipo_id, $ln['uid'], $ln['cant'], $ln['est']]);
             }
 
             // Recalcular cantidad total del equipo y ubicacion_id legacy
