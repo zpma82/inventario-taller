@@ -25,11 +25,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 function getPDO(): PDO {
     $dsn = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=%s', DB_HOST, DB_PORT, DB_NAME, DB_CHAR);
     try {
-        return new PDO($dsn, DB_USER, DB_PASS, [
+        $pdo = new PDO($dsn, DB_USER, DB_PASS, [
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES   => false,
+            // Forzar charset utf8mb4 y desactivar STRICT_TRANS_TABLES
+            // STRICT convierte Warning 1265 en error fatal que aborta la transacción
+            PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci; SET SESSION sql_mode = 'NO_ENGINE_SUBSTITUTION'",
         ]);
+        return $pdo;
     } catch (PDOException $e) {
         http_response_code(500);
         echo json_encode(['error' => 'Error de conexión: ' . $e->getMessage()]);
