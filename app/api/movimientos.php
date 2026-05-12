@@ -95,12 +95,10 @@ if ($method === 'GET') {
                     ->execute([$equipo_id]);
             }
 
-            // Insertar cada nueva línea. Si ya existe (misma ubic+estado) sumar cantidad
-            // VALUES() deprecado en MySQL 8.0.20+; usamos alias de fila
+            // Insertar cada nueva línea (ya se borraron las del estado origen, no hay duplicados)
             $ins = $pdo->prepare("
                 INSERT INTO equipo_ubicaciones (equipo_id, ubicacion_id, cantidad, estado)
-                VALUES (?,?,?,?) AS nueva
-                ON DUPLICATE KEY UPDATE cantidad = equipo_ubicaciones.cantidad + nueva.cantidad
+                VALUES (?,?,?,?)
             ");
             // Mapa explícito: tolerante a NFD/NFC y mayúsculas
             $mapaEstados = [
@@ -139,7 +137,7 @@ if ($method === 'GET') {
             responder(['mensaje' => 'Separación de ubicaciones guardada'], 201);
         } catch (Exception $e) {
             $pdo->rollBack();
-            responder(['error' => 'Error en la transacción: ' . $e->getMessage(), 'debug_lineas' => $lineas, 'debug_fila_estado' => $filaEstado], 500);
+            responder(['error' => 'Error en la transacción: ' . $e->getMessage()], 500);
         }
         return;
     }
@@ -266,10 +264,10 @@ if ($method === 'GET') {
                     ->execute([$equipo_id, $filaEstado]);
                 // Insertar la nueva línea
                 if ($uid) {
+                    // Borrar primero para evitar duplicados (ya se hizo DELETE arriba)
                     $pdo->prepare("
                         INSERT INTO equipo_ubicaciones (equipo_id, ubicacion_id, cantidad, estado)
-                        VALUES (?,?,?,?) AS nueva
-                        ON DUPLICATE KEY UPDATE cantidad = equipo_ubicaciones.cantidad + nueva.cantidad
+                        VALUES (?,?,?,?)
                     ")->execute([$equipo_id, (int)$uid, $cantFila, $filaEstado]);
                 }
             } else {
@@ -285,8 +283,7 @@ if ($method === 'GET') {
                     $est = $estActual->fetchColumn() ?: 'Activo';
                     $pdo->prepare("
                         INSERT INTO equipo_ubicaciones (equipo_id, ubicacion_id, cantidad, estado)
-                        VALUES (?,?,?,?) AS nueva
-                        ON DUPLICATE KEY UPDATE cantidad = nueva.cantidad
+                        VALUES (?,?,?,?)
                     ")->execute([$equipo_id, (int)$uid, $stock, $est]);
                 }
             }
