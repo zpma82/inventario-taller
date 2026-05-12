@@ -100,12 +100,19 @@ if ($method === 'GET') {
                 VALUES (?,?,?,?)
                 ON DUPLICATE KEY UPDATE cantidad = cantidad + VALUES(cantidad)
             ");
+            $estadosValidos = ['Activo', 'En reparación', 'Baja'];
             foreach ($lineas as $l) {
                 $uid  = (int)($l['id'] ?? 0);
                 $cant = (int)($l['cantidad'] ?? 0);
-                $est  = in_array($l['estado'] ?? '', ['Activo','En reparación','Baja'])
-                         ? $l['estado'] : ($filaEstado ?? 'Activo');
-                if ($uid > 0 && $cant > 0) $ins->execute([$equipo_id, $uid, $cant, $est]);
+                $estRaw = trim($l['estado'] ?? '');
+                // Normalizar NFD → NFC por si el navegador envía caracteres compuestos
+                if (function_exists('normalizer_normalize')) {
+                    $estRaw = normalizer_normalize($estRaw, Normalizer::FORM_C);
+                }
+                if (!in_array($estRaw, $estadosValidos, true)) {
+                    throw new Exception("Estado inválido recibido: '{$estRaw}'. Valores permitidos: " . implode(', ', $estadosValidos));
+                }
+                if ($uid > 0 && $cant > 0) $ins->execute([$equipo_id, $uid, $cant, $estRaw]);
             }
 
             // Recalcular cantidad total del equipo y ubicacion_id legacy
