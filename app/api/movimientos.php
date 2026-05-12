@@ -95,24 +95,28 @@ if ($method === 'GET') {
             }
 
             // Insertar cada nueva línea. Si ya existe (misma ubic+estado) sumar cantidad
+            // VALUES() deprecado en MySQL 8.0.20+; usamos alias de fila
             $ins = $pdo->prepare("
                 INSERT INTO equipo_ubicaciones (equipo_id, ubicacion_id, cantidad, estado)
-                VALUES (?,?,?,?)
-                ON DUPLICATE KEY UPDATE cantidad = cantidad + VALUES(cantidad)
+                VALUES (?,?,?,?) AS nueva
+                ON DUPLICATE KEY UPDATE cantidad = equipo_ubicaciones.cantidad + nueva.cantidad
             ");
-            $estadosValidos = ['Activo', 'En reparación', 'Baja'];
+            // Mapa explícito: tolerante a NFD/NFC y mayúsculas
+            $mapaEstados = [
+                'activo'        => 'Activo',
+                'en reparación' => 'En reparación',
+                'en reparacion' => 'En reparación',
+                'baja'          => 'Baja',
+            ];
             foreach ($lineas as $l) {
                 $uid  = (int)($l['id'] ?? 0);
                 $cant = (int)($l['cantidad'] ?? 0);
-                $estRaw = trim($l['estado'] ?? '');
-                // Normalizar NFD → NFC por si el navegador envía caracteres compuestos
-                if (function_exists('normalizer_normalize')) {
-                    $estRaw = normalizer_normalize($estRaw, Normalizer::FORM_C);
+                $estRaw  = trim((string)($l['estado'] ?? 'Activo'));
+                $estNorm = $mapaEstados[mb_strtolower($estRaw, 'UTF-8')] ?? null;
+                if ($estNorm === null) {
+                    throw new Exception("Estado inválido: '{$estRaw}'. Permitidos: Activo, En reparación, Baja");
                 }
-                if (!in_array($estRaw, $estadosValidos, true)) {
-                    throw new Exception("Estado inválido recibido: '{$estRaw}'. Valores permitidos: " . implode(', ', $estadosValidos));
-                }
-                if ($uid > 0 && $cant > 0) $ins->execute([$equipo_id, $uid, $cant, $estRaw]);
+                if ($uid > 0 && $cant > 0) $ins->execute([$equipo_id, $uid, $cant, $estNorm]);
             }
 
             // Recalcular cantidad total del equipo y ubicacion_id legacy
@@ -263,8 +267,8 @@ if ($method === 'GET') {
                 if ($uid) {
                     $pdo->prepare("
                         INSERT INTO equipo_ubicaciones (equipo_id, ubicacion_id, cantidad, estado)
-                        VALUES (?,?,?,?)
-                        ON DUPLICATE KEY UPDATE cantidad = cantidad + VALUES(cantidad)
+                        VALUES (?,?,?,?) AS nueva
+                        ON DUPLICATE KEY UPDATE cantidad = equipo_ubicaciones.cantidad + nueva.cantidad
                     ")->execute([$equipo_id, (int)$uid, $cantFila, $filaEstado]);
                 }
             } else {
@@ -280,8 +284,8 @@ if ($method === 'GET') {
                     $est = $estActual->fetchColumn() ?: 'Activo';
                     $pdo->prepare("
                         INSERT INTO equipo_ubicaciones (equipo_id, ubicacion_id, cantidad, estado)
-                        VALUES (?,?,?,?)
-                        ON DUPLICATE KEY UPDATE cantidad = VALUES(cantidad)
+                        VALUES (?,?,?,?) AS nueva
+                        ON DUPLICATE KEY UPDATE cantidad = nueva.cantidad
                     ")->execute([$equipo_id, (int)$uid, $stock, $est]);
                 }
             }
