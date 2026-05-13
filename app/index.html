@@ -289,6 +289,10 @@
     <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
       <button class="btn-secondary" onclick="abrirModalUbicaciones()" id="btn-ubicaciones">📍 Ubicaciones</button>
       <button class="btn-secondary" id="btn-usuarios" onclick="abrirModalUsuarios()" style="display:none">👥 Usuarios</button>
+      <button class="btn-secondary" id="btn-backup" onclick="abrirModalBackup()" style="display:none" title="Copia de seguridad y restauración">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Copia de seguridad
+      </button>
       <button class="btn-primary" onclick="abrirModalEquipo()" id="btn-nuevo-equipo">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Añadir equipo
@@ -583,6 +587,68 @@
     </div>
   </div>
 
+  <!-- ══ MODAL BACKUP / IMPORTAR ══ -->
+  <div class="overlay" id="overlay-backup" onclick="cerrarSiOverlay(event,'overlay-backup')">
+    <div class="modal" style="max-width:520px">
+      <div class="modal-header">
+        <h2>🗄️ Copia de seguridad y restauración</h2>
+        <button class="btn-close" onclick="cerrarModal('overlay-backup')">✕</button>
+      </div>
+
+      <!-- EXPORTAR -->
+      <div style="margin-bottom:1.5rem">
+        <div style="font-size:.78rem;font-weight:700;color:var(--txt-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem">
+          📤 Exportar — Copia de seguridad
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:.85rem 1rem;font-size:.85rem;color:var(--txt-2);margin-bottom:.85rem;line-height:1.6">
+          Descarga un fichero <code style="font-family:var(--mono);background:var(--border);padding:.1rem .35rem;border-radius:4px">.json</code>
+          con todos los registros de la base de datos: equipos, categorías, subcategorías, ubicaciones,
+          movimientos, especificaciones y empleados.
+        </div>
+        <button class="btn-primary" id="btn-do-backup" onclick="hacerBackup()" style="gap:.5rem">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Descargar copia de seguridad
+        </button>
+        <div id="backup-ok" style="display:none;margin-top:.6rem;padding:.5rem .85rem;background:var(--ok-lt);border:1px solid #86efac;border-radius:var(--r);color:var(--ok);font-size:.84rem"></div>
+        <div id="backup-err" style="display:none;margin-top:.6rem;padding:.5rem .85rem;background:var(--danger-lt);border:1px solid #fca5a5;border-radius:var(--r);color:var(--danger);font-size:.84rem"></div>
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin-bottom:1.5rem">
+
+      <!-- IMPORTAR -->
+      <div>
+        <div style="font-size:.78rem;font-weight:700;color:var(--txt-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem">
+          📥 Importar — Restaurar registros
+        </div>
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:var(--r);padding:.75rem 1rem;font-size:.83rem;color:#92400e;margin-bottom:.85rem;line-height:1.6">
+          ⚠️ <strong>Atención:</strong> La importación añade registros nuevos a la base de datos actual.
+          En modo <em>Reemplazar</em> sobreescribirá los registros existentes con el mismo ID.
+        </div>
+        <div class="form-group" style="margin-bottom:.75rem">
+          <label>Fichero de backup (.json)</label>
+          <input type="file" id="import-file" accept=".json" style="padding:.45rem .7rem;border:1px solid var(--border);border-radius:var(--r);font-family:var(--sans);font-size:.85rem;width:100%;cursor:pointer" onchange="previewImport()" />
+        </div>
+        <div id="import-preview" style="display:none;margin-bottom:.85rem;padding:.65rem .9rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);font-size:.83rem;line-height:1.7"></div>
+        <div class="form-group" style="margin-bottom:.85rem">
+          <label>Modo de importación</label>
+          <select id="import-modo" style="width:100%">
+            <option value="merge">Fusionar — solo añade registros nuevos (recomendado)</option>
+            <option value="replace">Reemplazar — sobreescribe si el ID ya existe</option>
+          </select>
+        </div>
+        <button class="btn-secondary" id="btn-do-import" onclick="hacerImport()" style="gap:.5rem;border-color:var(--warn);color:var(--warn)" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Importar registros
+        </button>
+        <div id="import-result" style="display:none;margin-top:.75rem;padding:.65rem .9rem;border-radius:var(--r);font-size:.83rem;line-height:1.7"></div>
+      </div>
+
+      <div class="modal-footer" style="margin-top:1.25rem">
+        <button class="btn-cancel" onclick="cerrarModal('overlay-backup')">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ══ JAVASCRIPT ══ -->
   <script>
     const BASE_URL = '/api';
@@ -696,6 +762,9 @@
       // Botón usuarios
       const btnU = document.getElementById('btn-usuarios');
       if (btnU) btnU.style.display = esAdmin ? '' : 'none';
+      // Botón backup (solo admin)
+      const btnBk = document.getElementById('btn-backup');
+      if (btnBk) btnBk.style.display = esAdmin ? '' : 'none';
       // Botones nueva categoría / subcategoría (solo admin y tecnico)
       ['btn-nueva-cat','btn-nueva-subcat'].forEach(bid => {
         const b = document.getElementById(bid);
@@ -1537,6 +1606,132 @@
         document.getElementById('ubic-preview').textContent='—';
         await refrescarListaUbicaciones();
       } catch(e){mostrarError(`Error al crear ubicación: ${e.message}`);}
+    }
+
+    // ── BACKUP / IMPORTAR ────────────────────
+    function abrirModalBackup() {
+      // Limpiar estado previo
+      ['backup-ok','backup-err','import-result','import-preview'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.style.display='none'; el.textContent=''; }
+      });
+      const fi = document.getElementById('import-file');
+      if (fi) fi.value = '';
+      const bi = document.getElementById('btn-do-import');
+      if (bi) bi.disabled = true;
+      document.getElementById('overlay-backup').classList.add('active');
+    }
+
+    async function hacerBackup() {
+      const btn = document.getElementById('btn-do-backup');
+      const okEl  = document.getElementById('backup-ok');
+      const errEl = document.getElementById('backup-err');
+      okEl.style.display = 'none'; errEl.style.display = 'none';
+      btn.textContent = '⏳ Generando…'; btn.disabled = true;
+      try {
+        const token = getToken();
+        const r = await fetch(`${BASE_URL}/backup.php?accion=exportar`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!r.ok) {
+          const e = await r.json().catch(()=>({}));
+          throw new Error(e.error || `HTTP ${r.status}`);
+        }
+        const blob = await r.blob();
+        // Extraer nombre del fichero de la cabecera
+        const cd = r.headers.get('Content-Disposition') || '';
+        const match = cd.match(/filename="?([^"]+)"?/);
+        const filename = match ? match[1] : `backup_inventaller_${new Date().toISOString().slice(0,19).replace(/[T:]/g,'-')}.json`;
+        // Descargar
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        okEl.textContent = `✅ Backup descargado: ${filename}`;
+        okEl.style.display = 'block';
+      } catch(e) {
+        errEl.textContent = `❌ Error: ${e.message}`;
+        errEl.style.display = 'block';
+      } finally {
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Descargar copia de seguridad';
+        btn.disabled = false;
+      }
+    }
+
+    function previewImport() {
+      const file = document.getElementById('import-file').files[0];
+      const prev = document.getElementById('import-preview');
+      const btn  = document.getElementById('btn-do-import');
+      const res  = document.getElementById('import-result');
+      res.style.display = 'none';
+      if (!file) { prev.style.display='none'; btn.disabled=true; return; }
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!data.__meta) { prev.innerHTML='<span style="color:var(--danger)">❌ Fichero inválido: no es un backup de Inventario Taller</span>'; prev.style.display='block'; btn.disabled=true; return; }
+          const m = data.__meta;
+          const tablas = Object.keys(data).filter(k=>!k.startsWith('__'));
+          const resumen = tablas.map(t => `${t}: ${Array.isArray(data[t])?data[t].length:0} registros`).join(' · ');
+          prev.innerHTML = `<strong>📋 Backup válido</strong><br>Fecha: ${m.fecha} · Generado por: ${m.generado_por||'—'}<br><span style="color:var(--txt-2)">${resumen}</span>`;
+          prev.style.display = 'block';
+          btn.disabled = false;
+        } catch {
+          prev.innerHTML='<span style="color:var(--danger)">❌ El fichero no es un JSON válido</span>';
+          prev.style.display='block';
+          btn.disabled = true;
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    async function hacerImport() {
+      const file = document.getElementById('import-file').files[0];
+      if (!file) return;
+      const modo = document.getElementById('import-modo').value;
+      const btn  = document.getElementById('btn-do-import');
+      const res  = document.getElementById('import-result');
+      const aviso = modo === 'replace'
+        ? '⚠️ Modo REEMPLAZAR: los registros existentes con el mismo ID serán sobreescritos.\n¿Continuar?'
+        : '¿Importar los registros del fichero?';
+      if (!confirm(aviso)) return;
+      btn.textContent = '⏳ Importando…'; btn.disabled = true;
+      res.style.display = 'none';
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        data.__modo = modo;
+        const token = getToken();
+        const r = await fetch(`${BASE_URL}/backup.php?accion=importar`, {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(data)
+        });
+        const resp = await r.json();
+        if (!r.ok) throw new Error(resp.error || `HTTP ${r.status}`);
+        // Mostrar resumen
+        const filas = Object.entries(resp.resultados||{})
+          .map(([t,v]) => v.omitida ? null : `<strong>${t}</strong>: ${v.insertados} añadidos · ${v.actualizados} actualizados · ${v.omitidos} omitidos`)
+          .filter(Boolean).join('<br>');
+        const errLines = (resp.errores||[]).length > 0
+          ? `<br><span style="color:var(--warn)">⚠️ Advertencias: ${resp.errores.join('; ')}</span>` : '';
+        res.innerHTML = `<span style="color:var(--ok);font-weight:700">✅ Importación completada</span><br>${filas}${errLines}`;
+        res.style.background = 'var(--ok-lt)';
+        res.style.border = '1px solid #86efac';
+        res.style.display = 'block';
+        // Recargar datos
+        await cargarTodo();
+      } catch(e) {
+        res.innerHTML = `<span style="color:var(--danger);font-weight:700">❌ Error: ${e.message}</span>`;
+        res.style.background = 'var(--danger-lt)';
+        res.style.border = '1px solid #fca5a5';
+        res.style.display = 'block';
+      } finally {
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Importar registros';
+        btn.disabled = false;
+      }
     }
 
     // ── Cerrar modales ────────────────────────
