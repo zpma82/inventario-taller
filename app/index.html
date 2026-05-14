@@ -1660,6 +1660,9 @@
       }
     }
 
+    // Tablas reconocidas del sistema — cualquier JSON que contenga al menos una es válido
+    const TABLAS_CONOCIDAS = ['equipos','categorias','subcategorias','ubicaciones','movimientos','especificaciones','empleados','usuarios_app'];
+
     function previewImport() {
       const file = document.getElementById('import-file').files[0];
       const prev = document.getElementById('import-preview');
@@ -1671,11 +1674,29 @@
       reader.onload = function(e) {
         try {
           const data = JSON.parse(e.target.result);
-          if (!data.__meta) { prev.innerHTML='<span style="color:var(--danger)">❌ Fichero inválido: no es un backup de Inventario Taller</span>'; prev.style.display='block'; btn.disabled=true; return; }
-          const m = data.__meta;
-          const tablas = Object.keys(data).filter(k=>!k.startsWith('__'));
-          const resumen = tablas.map(t => `${t}: ${Array.isArray(data[t])?data[t].length:0} registros`).join(' · ');
-          prev.innerHTML = `<strong>📋 Backup válido</strong><br>Fecha: ${m.fecha} · Generado por: ${m.generado_por||'—'}<br><span style="color:var(--txt-2)">${resumen}</span>`;
+
+          // Aceptar si tiene __meta O si contiene al menos una tabla conocida
+          const tablasEncontradas = Object.keys(data).filter(k => TABLAS_CONOCIDAS.includes(k));
+          const esValido = data.__meta || tablasEncontradas.length > 0;
+
+          if (!esValido) {
+            prev.innerHTML='<span style="color:var(--danger)">❌ Fichero inválido: no contiene tablas reconocidas de Inventario Taller</span>';
+            prev.style.display='block'; btn.disabled=true; return;
+          }
+
+          // Construir resumen con lo que haya
+          const m = data.__meta || {};
+          const todasTablas = Object.keys(data).filter(k => !k.startsWith('__'));
+          const resumen = (todasTablas.length > 0 ? todasTablas : tablasEncontradas)
+            .map(t => `${t}: ${Array.isArray(data[t]) ? data[t].length : 0} registros`).join(' · ');
+
+          const fechaStr  = m.fecha        || '(no especificada)';
+          const autorStr  = m.generado_por || '(no especificado)';
+          const avisoMeta = !data.__meta
+            ? '<br><span style="color:var(--warn);font-size:.8rem">⚠️ Formato de backup antiguo — se importará igualmente</span>'
+            : '';
+
+          prev.innerHTML = `<strong>📋 Backup válido</strong><br>Fecha: ${fechaStr} · Generado por: ${autorStr}${avisoMeta}<br><span style="color:var(--txt-2)">${resumen}</span>`;
           prev.style.display = 'block';
           btn.disabled = false;
         } catch {

@@ -104,10 +104,24 @@ if ($method === 'GET' && $accion === 'exportar') {
 if ($method === 'POST' && $accion === 'importar') {
     $body = json_decode(file_get_contents('php://input'), true);
 
-    if (!$body || !isset($body['__meta'])) {
+    // Tablas reconocidas — basta con que el JSON tenga al menos una
+    $tablas_sistema = ['equipos','categorias','subcategorias','ubicaciones','movimientos','especificaciones','empleados','usuarios_app'];
+    $tablas_en_json = array_intersect($tablas_sistema, array_keys($body ?? []));
+
+    if (!$body || (empty($body['__meta']) && count($tablas_en_json) === 0)) {
         http_response_code(400);
-        echo json_encode(['error' => 'Fichero de backup inválido o corrupto']);
+        echo json_encode(['error' => 'Fichero de backup inválido: no contiene tablas reconocidas de Inventario Taller']);
         exit;
+    }
+
+    // Inyectar __meta si no existe (backups de formato antiguo)
+    if (empty($body['__meta'])) {
+        $body['__meta'] = [
+            'version'     => 'legacy',
+            'fecha'       => '(desconocida)',
+            'base_datos'  => DB_NAME,
+            'generado_por'=> '(formato antiguo)',
+        ];
     }
 
     $modo = $body['__modo'] ?? 'merge'; // 'merge' o 'replace'
