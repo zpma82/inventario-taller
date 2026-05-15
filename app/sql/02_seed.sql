@@ -17,7 +17,7 @@ INSERT IGNORE INTO categorias (nombre) VALUES
 -- Calles: números del 1 al 10
 INSERT IGNORE INTO ubic_calles  VALUES ('1'),('2'),('3'),('4'),('5'),('6'),('7'),('8'),('9'),('10');
 -- Lados: Dcha e Izda
-INSERT IGNORE INTO ubic_lados   VALUES ('Dcha'),('Izda');
+INSERT IGNORE INTO ubic_lados   VALUES ('Dcha'),('Izda'),('Frente'),('Atras');
 -- Huecos: números del 1 al 15
 INSERT IGNORE INTO ubic_huecos  VALUES ('1'),('2'),('3'),('4'),('5'),('6'),('7'),('8'),('9'),('10'),('11'),('12'),('13'),('14'),('15');
 -- Alturas: letras A-E

@@ -488,36 +488,62 @@
   </div>
 
   <!-- ══ MODAL: GESTIÓN DE UBICACIONES ══ -->
+  <!-- ══ MODAL: GESTIÓN DE UBICACIONES ══ -->
   <div class="overlay" id="overlay-ubicaciones" onclick="cerrarSiOverlay(event,'overlay-ubicaciones')">
-    <div class="modal" style="max-width:460px">
+    <div class="modal" style="max-width:860px;width:96vw">
       <div class="modal-header">
-        <h2>📍 Ubicaciones</h2>
+        <h2>📍 Gestión de ubicaciones</h2>
         <button class="btn-close" onclick="cerrarModal('overlay-ubicaciones')">✕</button>
       </div>
-      <p style="font-size:.82rem;color:var(--txt-2);margin-bottom:.85rem">
-        Selecciona los 4 campos para crear una nueva ubicación.
-      </p>
-      <div class="form-group" style="margin-bottom:.75rem">
-        <label>Calle – Lado – Hueco – Altura</label>
-        <div class="ubic-row">
-          <select id="nu-calle"  onchange="actualizarPreview()"><option value="">Calle</option></select>
-          <select id="nu-lado"   onchange="actualizarPreview()"><option value="">Lado</option></select>
-          <select id="nu-hueco"  onchange="actualizarPreview()"><option value="">Hueco</option></select>
-          <select id="nu-altura" onchange="actualizarPreview()"><option value="">Altura</option></select>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start">
+
+        <!-- COLUMNA IZQUIERDA: formulario + lista -->
+        <div>
+          <p style="font-size:.82rem;color:var(--txt-2);margin-bottom:.85rem">
+            Selecciona los 4 campos para crear una nueva ubicación.
+          </p>
+          <div class="form-group" style="margin-bottom:.75rem">
+            <label>Calle – Lado – Hueco – Altura</label>
+            <div class="ubic-row">
+              <select id="nu-calle"  onchange="actualizarPreview();renderPlano()"><option value="">Calle</option></select>
+              <select id="nu-lado"   onchange="actualizarPreview()"><option value="">Lado</option></select>
+              <select id="nu-hueco"  onchange="actualizarPreview()"><option value="">Hueco</option></select>
+              <select id="nu-altura" onchange="actualizarPreview()"><option value="">Altura</option></select>
+            </div>
+          </div>
+          <div style="margin-bottom:1rem;display:flex;align-items:center;gap:.75rem">
+            <span style="font-size:.8rem;color:var(--txt-2)">Vista previa:</span>
+            <span id="ubic-preview" style="font-family:var(--mono);font-size:1rem;font-weight:700;color:var(--accent);background:var(--accent-lt);padding:.2rem .65rem;border-radius:5px">—</span>
+          </div>
+          <button class="btn-primary" style="width:100%;justify-content:center;margin-bottom:1.25rem" onclick="crearUbicacion()">
+            + Crear ubicación
+          </button>
+          <div style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--txt-3);margin-bottom:.5rem">Ubicaciones existentes</div>
+          <div id="lista-ubicaciones" style="max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r)">
+            <div style="padding:1rem;text-align:center;color:var(--txt-3);font-size:.85rem">Cargando…</div>
+          </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: plano -->
+        <div>
+          <div style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--txt-3);margin-bottom:.5rem;display:flex;align-items:center;gap:.5rem">
+            Plano por calle
+            <select id="plano-calle-sel" onchange="renderPlano()" style="font-size:.78rem;padding:.2rem .45rem;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--txt-1)">
+              <option value="">— Elige calle —</option>
+            </select>
+          </div>
+          <div id="plano-wrap" style="position:relative;user-select:none">
+            <!-- SVG se inyecta por JS -->
+            <div style="padding:2rem;text-align:center;color:var(--txt-3);font-size:.82rem;border:1px dashed var(--border);border-radius:var(--r)">
+              Selecciona una calle para ver el plano
+            </div>
+          </div>
+          <div id="plano-tooltip" style="display:none;position:fixed;background:#1e293b;color:#f1f5f9;font-size:.75rem;font-family:var(--mono);padding:.3rem .6rem;border-radius:5px;pointer-events:none;z-index:9999;white-space:nowrap"></div>
         </div>
       </div>
-      <div style="margin-bottom:1rem;display:flex;align-items:center;gap:.75rem">
-        <span style="font-size:.8rem;color:var(--txt-2)">Vista previa:</span>
-        <span id="ubic-preview" style="font-family:var(--mono);font-size:1rem;font-weight:700;color:var(--accent);background:var(--accent-lt);padding:.2rem .65rem;border-radius:5px">—</span>
-      </div>
-      <button class="btn-primary" style="width:100%;justify-content:center;margin-bottom:1.25rem" onclick="crearUbicacion()">
-        + Crear ubicación
-      </button>
-      <div style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--txt-3);margin-bottom:.5rem">Ubicaciones existentes</div>
-      <div id="lista-ubicaciones" style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r)">
-        <div style="padding:1rem;text-align:center;color:var(--txt-3);font-size:.85rem">Cargando…</div>
-      </div>
-      <div class="modal-footer">
+
+      <div class="modal-footer" style="margin-top:1rem">
         <button class="btn-cancel" onclick="cerrarModal('overlay-ubicaciones')">Cerrar</button>
       </div>
     </div>
@@ -1572,41 +1598,288 @@
       document.getElementById('overlay-ubicaciones').classList.add('active');
       await refrescarListaUbicaciones();
     }
+
     async function refrescarListaUbicaciones() {
-      const lista=document.getElementById('lista-ubicaciones');
-      lista.innerHTML='<div style="padding:1rem;text-align:center;color:var(--txt-3);font-size:.85rem">Cargando…</div>';
+      const lista = document.getElementById('lista-ubicaciones');
+      lista.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--txt-3);font-size:.85rem">Cargando…</div>';
       try {
-        const data=await apiGet('ubicaciones.php');
-        ubicaciones=data;
+        const data = await apiGet('ubicaciones.php');
+        ubicaciones = data;
+
+        // Poblar lista
         lista.innerHTML = data.length
-          ? data.map(u=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem .85rem;border-bottom:1px solid var(--border)">
+          ? data.map(u => `<div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem .85rem;border-bottom:1px solid var(--border)">
               <span style="font-family:var(--mono);font-size:.9rem;font-weight:600;color:var(--accent)">${u.etiqueta}</span>
               <span style="font-size:.75rem;color:var(--txt-3)">${u.calle} · ${u.lado} · ${u.hueco} · ${u.altura}</span>
             </div>`).join('')
           : '<div style="padding:1rem;text-align:center;color:var(--txt-3);font-size:.85rem">No hay ubicaciones todavía.</div>';
-        const optsU=data.map(u=>`<option value="${u.id}">${u.etiqueta}</option>`).join('');
-        ['f-ubicacion-id','move-ubicacion-id','sep-ubic'].forEach(id=>{
-          const el=document.getElementById(id);
-          if(el) el.innerHTML=`<option value="">— Sin ubicación —</option>${optsU}`;
+
+        // Poblar selector de equipos
+        const optsU = data.map(u => `<option value="${u.id}">${u.etiqueta}</option>`).join('');
+        ['f-ubicacion-id','move-ubicacion-id','sep-ubic'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.innerHTML = `<option value="">— Sin ubicación —</option>${optsU}`;
         });
-      } catch(e){lista.innerHTML=`<div style="padding:1rem;color:var(--danger);font-size:.85rem">Error: ${e.message}</div>`;}
+
+        // Poblar selector de calle del plano
+        const calles = [...new Set(data.map(u => u.calle))].sort((a,b) => a - b);
+        const sel = document.getElementById('plano-calle-sel');
+        if (sel) {
+          const prev = sel.value;
+          sel.innerHTML = '<option value="">— Elige calle —</option>'
+            + calles.map(c => `<option value="${c}">${'Calle ' + c}</option>`).join('');
+          if (prev && calles.includes(prev)) sel.value = prev;
+        }
+
+        renderPlano();
+      } catch(e) {
+        lista.innerHTML = `<div style="padding:1rem;color:var(--danger);font-size:.85rem">Error: ${e.message}</div>`;
+      }
     }
+
     function actualizarPreview() {
-      const c=document.getElementById('nu-calle').value, l=document.getElementById('nu-lado').value;
-      const h=document.getElementById('nu-hueco').value, a=document.getElementById('nu-altura').value;
-      document.getElementById('ubic-preview').textContent=(c&&l&&h&&a)?`${c}-${l}-${h}-${a}`:'—';
+      const c = document.getElementById('nu-calle').value,
+            l = document.getElementById('nu-lado').value,
+            h = document.getElementById('nu-hueco').value,
+            a = document.getElementById('nu-altura').value;
+      document.getElementById('ubic-preview').textContent = (c&&l&&h&&a) ? `${c}-${l}-${h}-${a}` : '—';
     }
+
     async function crearUbicacion() {
-      const calle=document.getElementById('nu-calle').value, lado=document.getElementById('nu-lado').value;
-      const hueco=document.getElementById('nu-hueco').value, altura=document.getElementById('nu-altura').value;
-      if(!calle||!lado||!hueco||!altura){alert('Selecciona los 4 campos.');return;}
+      const calle  = document.getElementById('nu-calle').value,
+            lado   = document.getElementById('nu-lado').value,
+            hueco  = document.getElementById('nu-hueco').value,
+            altura = document.getElementById('nu-altura').value;
+      if (!calle||!lado||!hueco||!altura) { alert('Selecciona los 4 campos.'); return; }
       try {
-        await apiPost('ubicaciones.php',{calle,lado,hueco,altura});
-        ['nu-calle','nu-lado','nu-hueco','nu-altura'].forEach(id=>document.getElementById(id).value='');
-        document.getElementById('ubic-preview').textContent='—';
+        await apiPost('ubicaciones.php', {calle, lado, hueco, altura});
+        ['nu-calle','nu-lado','nu-hueco','nu-altura'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('ubic-preview').textContent = '—';
+        // Forzar la calle recién creada en el plano
         await refrescarListaUbicaciones();
-      } catch(e){mostrarError(`Error al crear ubicación: ${e.message}`);}
+        const sel = document.getElementById('plano-calle-sel');
+        if (sel && !sel.value) sel.value = calle;
+        renderPlano();
+      } catch(e) { mostrarError(`Error al crear ubicación: ${e.message}`); }
     }
+
+    // ── PLANO DE CALLE ──────────────────────────────────────────
+    // Layout: la calle es una habitación rectangular.
+    //   Frente  = pared superior
+    //   Atras   = pared inferior
+    //   Izda    = estanterías pegadas a la pared izquierda
+    //   Dcha    = estanterías pegadas a la pared derecha
+    // Los huecos se colocan de arriba (Frente) a abajo (Atras).
+    // Las alturas se muestran como columnas dentro de cada hueco.
+
+    function renderPlano() {
+      const wrap = document.getElementById('plano-wrap');
+      const sel  = document.getElementById('plano-calle-sel');
+      if (!wrap || !sel) return;
+
+      const calleActiva = sel.value
+        || (document.getElementById('nu-calle') && document.getElementById('nu-calle').value)
+        || '';
+
+      if (!calleActiva || !ubicaciones || !ubicaciones.length) {
+        wrap.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--txt-3);font-size:.82rem;border:1px dashed var(--border);border-radius:var(--r)">Selecciona una calle para ver el plano</div>';
+        return;
+      }
+
+      // Filtrar ubicaciones de esta calle
+      const ubs = ubicaciones.filter(u => String(u.calle) === String(calleActiva));
+
+      // Agrupar por lado
+      const LADOS_ORDEN = ['Izda','Dcha','Frente','Atras'];
+      const grupos = {};
+      LADOS_ORDEN.forEach(l => { grupos[l] = []; });
+      ubs.forEach(u => {
+        const k = u.lado;
+        if (!grupos[k]) grupos[k] = [];
+        grupos[k].push(u);
+      });
+
+      // Dimensiones SVG
+      const W = 460, H = 380;
+      const PAD = 48;          // margen para etiquetas exteriores
+      const MURO = 4;          // grosor de la pared
+      const CELL_W = 36, CELL_H = 22, GAP = 3;
+
+      // Ordenar huecos numéricamente
+      const sortHuecos = arr => [...arr].sort((a,b) => Number(a.hueco)-Number(b.hueco));
+      const sortAlturas = arr => [...arr].sort((a,b) => a.altura.localeCompare(b.altura));
+
+      // Helper: agrupar lista de ubs por hueco
+      function porHueco(arr) {
+        const m = {};
+        arr.forEach(u => { if (!m[u.hueco]) m[u.hueco] = []; m[u.hueco].push(u); });
+        return m;
+      }
+
+      // Colores por altura (a,b,c,d,e → paleta)
+      const ALTURA_COLORS = { A:'#6366f1', B:'#0ea5e9', C:'#10b981', D:'#f59e0b', E:'#ef4444' };
+      const LADO_COLORS   = { Izda:'#6366f1', Dcha:'#0ea5e9', Frente:'#f59e0b', Atras:'#10b981' };
+
+      // Interior del rectángulo
+      const rx = PAD, ry = PAD, rw = W - PAD*2, rh = H - PAD*2;
+
+      let cells = '';
+      const tooltip = [];
+
+      // ── Lados Izda / Dcha (estanterías verticales a izq y dcha) ──
+      ['Izda','Dcha'].forEach(lado => {
+        const ubsLado = sortHuecos(grupos[lado] || []);
+        const huecosMap = porHueco(ubsLado);
+        const huecoKeys = Object.keys(huecosMap).sort((a,b)=>Number(a)-Number(b));
+        if (!huecoKeys.length) return;
+
+        const isIzda = (lado === 'Izda');
+        const nHuecos = huecoKeys.length;
+        // Distribuir huecos a lo largo de la pared vertical
+        const step = (rh - 8) / nHuecos;
+        const baseX = isIzda ? (rx + MURO + 4) : (rx + rw - MURO - 4 - CELL_W);
+
+        huecoKeys.forEach((hueco, hi) => {
+          const alturas = sortAlturas(huecosMap[hueco]);
+          const nAlt    = alturas.length;
+          const yCenter = ry + 4 + hi * step + step / 2;
+          // Subcolumnas por altura
+          const totalW  = nAlt * (CELL_W / nAlt);
+          alturas.forEach((u, ai) => {
+            const cw = Math.max(10, Math.floor((CELL_W - (nAlt-1)*1) / nAlt));
+            const cx = isIzda
+              ? (rx + MURO + 5 + ai * (cw + 1))
+              : (rx + rw - MURO - 5 - (nAlt - ai) * (cw + 1));
+            const cy = yCenter - CELL_H/2;
+            const fill = ALTURA_COLORS[u.altura] || '#94a3b8';
+            const title = `${u.calle}-${u.lado}-${u.hueco}-${u.altura}`;
+            cells += `<rect data-tip="${title}" x="${cx.toFixed(1)}" y="${cy.toFixed(1)}" width="${cw}" height="${CELL_H}" rx="2" fill="${fill}" fill-opacity="0.82" stroke="white" stroke-width=".5" style="cursor:pointer" onmouseenter="showPlanoTip(event,'${title}')" onmouseleave="hidePlanoTip()"/>`;
+            cells += `<text x="${(cx+cw/2).toFixed(1)}" y="${(cy+CELL_H/2+3.5).toFixed(1)}" text-anchor="middle" font-size="7" fill="white" font-family="var(--mono)" pointer-events="none">${u.altura}</text>`;
+          });
+          // Etiqueta del hueco
+          const labelX = isIzda ? (rx + MURO + 5 + CELL_W + 3) : (rx + rw - MURO - 5 - CELL_W - 3);
+          const anchor  = isIzda ? 'start' : 'end';
+          cells += `<text x="${labelX.toFixed(1)}" y="${(yCenter+3.5).toFixed(1)}" text-anchor="${anchor}" font-size="8" fill="var(--txt-2)" font-family="var(--mono)">${hueco}</text>`;
+        });
+      });
+
+      // ── Lados Frente / Atras (estanterías horizontales arriba y abajo) ──
+      ['Frente','Atras'].forEach(lado => {
+        const ubsLado = sortHuecos(grupos[lado] || []);
+        const huecosMap = porHueco(ubsLado);
+        const huecoKeys = Object.keys(huecosMap).sort((a,b)=>Number(a)-Number(b));
+        if (!huecoKeys.length) return;
+
+        const isFrente = (lado === 'Frente');
+        const nHuecos  = huecoKeys.length;
+        const step     = (rw - 8) / nHuecos;
+        const baseY    = isFrente ? (ry + MURO + 4) : (ry + rh - MURO - 4 - CELL_H);
+
+        huecoKeys.forEach((hueco, hi) => {
+          const alturas = sortAlturas(huecosMap[hueco]);
+          const nAlt    = alturas.length;
+          const xCenter = rx + 4 + hi * step + step / 2;
+          alturas.forEach((u, ai) => {
+            const ch = Math.max(8, Math.floor((CELL_H - (nAlt-1)*1) / nAlt));
+            const cx = xCenter - CELL_W/2;
+            const cy = isFrente
+              ? (ry + MURO + 5 + ai * (ch + 1))
+              : (ry + rh - MURO - 5 - (nAlt - ai) * (ch + 1));
+            const fill  = ALTURA_COLORS[u.altura] || '#94a3b8';
+            const title = `${u.calle}-${u.lado}-${u.hueco}-${u.altura}`;
+            cells += `<rect data-tip="${title}" x="${cx.toFixed(1)}" y="${cy.toFixed(1)}" width="${CELL_W}" height="${ch}" rx="2" fill="${fill}" fill-opacity="0.82" stroke="white" stroke-width=".5" style="cursor:pointer" onmouseenter="showPlanoTip(event,'${title}')" onmouseleave="hidePlanoTip()"/>`;
+            cells += `<text x="${(cx+CELL_W/2).toFixed(1)}" y="${(cy+ch/2+3).toFixed(1)}" text-anchor="middle" font-size="7" fill="white" font-family="var(--mono)" pointer-events="none">${u.altura}</text>`;
+          });
+          // Etiqueta hueco
+          const labelY = isFrente ? (ry + MURO + 5 + CELL_H + 10) : (ry + rh - MURO - 5 - CELL_H - 4);
+          cells += `<text x="${(xCenter).toFixed(1)}" y="${(labelY).toFixed(1)}" text-anchor="middle" font-size="8" fill="var(--txt-2)" font-family="var(--mono)">${hueco}</text>`;
+        });
+      });
+
+      // ── Leyenda alturas ──
+      let leyenda = '';
+      const altUsadas = [...new Set(ubs.map(u=>u.altura))].sort();
+      altUsadas.forEach((a, i) => {
+        const lx = PAD + i * 52;
+        const ly = H - 12;
+        leyenda += `<rect x="${lx}" y="${ly-9}" width="10" height="10" rx="2" fill="${ALTURA_COLORS[a]||'#94a3b8'}" fill-opacity=".85"/>`;
+        leyenda += `<text x="${lx+13}" y="${ly}" font-size="9" fill="var(--txt-2)" font-family="var(--sans)">Alt. ${a}</text>`;
+      });
+
+      // ── Leyenda lados ──
+      const ladosUsados = [...new Set(ubs.map(u=>u.lado))];
+      ladosUsados.forEach((l, i) => {
+        const lx = PAD + i * 70;
+        const ly = H - 26;
+        leyenda += `<rect x="${lx}" y="${ly-9}" width="10" height="10" rx="2" fill="${LADO_COLORS[l]||'#94a3b8'}" fill-opacity=".4" stroke="${LADO_COLORS[l]||'#94a3b8'}" stroke-width="1"/>`;
+        leyenda += `<text x="${lx+13}" y="${ly}" font-size="9" fill="var(--txt-2)" font-family="var(--sans)">${l}</text>`;
+      });
+
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" style="width:100%;border-radius:var(--r)">
+        <!-- fondo -->
+        <rect width="${W}" height="${H}" fill="var(--bg)" rx="8"/>
+
+        <!-- etiqueta Frente -->
+        <text x="${W/2}" y="${PAD-10}" text-anchor="middle" font-size="11" font-weight="700"
+              fill="var(--txt-2)" font-family="var(--sans)" letter-spacing=".05em">FRENTE</text>
+        <!-- etiqueta Atras -->
+        <text x="${W/2}" y="${H-PAD+22}" text-anchor="middle" font-size="11" font-weight="700"
+              fill="var(--txt-2)" font-family="var(--sans)" letter-spacing=".05em">ATRÁS</text>
+        <!-- etiqueta Izda -->
+        <text x="${PAD-10}" y="${H/2}" text-anchor="middle" font-size="11" font-weight="700"
+              fill="var(--txt-2)" font-family="var(--sans)" letter-spacing=".05em"
+              transform="rotate(-90,${PAD-10},${H/2})">IZDA</text>
+        <!-- etiqueta Dcha -->
+        <text x="${W-PAD+18}" y="${H/2}" text-anchor="middle" font-size="11" font-weight="700"
+              fill="var(--txt-2)" font-family="var(--sans)" letter-spacing=".05em"
+              transform="rotate(90,${W-PAD+18},${H/2})">DCHA</text>
+
+        <!-- habitación -->
+        <rect x="${rx}" y="${ry}" width="${rw}" height="${rh}"
+              fill="var(--surface)" stroke="var(--txt-1)" stroke-width="${MURO}" rx="3"/>
+
+        <!-- interior sombreado pasillo central -->
+        <rect x="${rx+MURO+CELL_W+18}" y="${ry+MURO+CELL_H+18}"
+              width="${rw - 2*(MURO+CELL_W+18)}" height="${rh - 2*(MURO+CELL_H+18)}"
+              fill="var(--bg)" fill-opacity=".5" rx="4"/>
+
+        <!-- título calle -->
+        <text x="${W/2}" y="${ry+rh/2+4}" text-anchor="middle" font-size="28" font-weight="900"
+              fill="var(--accent)" fill-opacity=".08" font-family="var(--mono)">CALLE ${calleActiva}</text>
+
+        <!-- ubicaciones -->
+        ${cells}
+
+        <!-- leyenda -->
+        ${leyenda}
+      </svg>`;
+
+      wrap.innerHTML = svg;
+    }
+
+    function showPlanoTip(e, text) {
+      const t = document.getElementById('plano-tooltip');
+      if (!t) return;
+      t.textContent = text;
+      t.style.display = 'block';
+      movePlanoTip(e);
+    }
+    function hidePlanoTip() {
+      const t = document.getElementById('plano-tooltip');
+      if (t) t.style.display = 'none';
+    }
+    function movePlanoTip(e) {
+      const t = document.getElementById('plano-tooltip');
+      if (t && t.style.display !== 'none') {
+        t.style.left = (e.clientX + 14) + 'px';
+        t.style.top  = (e.clientY - 28) + 'px';
+      }
+    }
+    document.addEventListener('mousemove', e => {
+      const t = document.getElementById('plano-tooltip');
+      if (t && t.style.display !== 'none') movePlanoTip(e);
+    });
+
 
     // ── BACKUP / IMPORTAR ────────────────────
     function abrirModalBackup() {
