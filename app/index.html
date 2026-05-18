@@ -94,6 +94,58 @@
     /* Botones deshabilitados para roles sin permiso */
     .btn-primary:disabled, .btn-secondary:disabled { opacity: .45; cursor: not-allowed; pointer-events: none; }
 
+    /* ── Sidebar ── */
+    :root { --sb-w: 220px; --sb-w-collapsed: 52px; }
+    #sidebar {
+      position: fixed; top: var(--header-h); left: 0; bottom: 0;
+      width: var(--sb-w); background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 0;
+      z-index: 45; transition: width .22s cubic-bezier(.4,0,.2,1);
+      box-shadow: 2px 0 8px rgba(0,0,0,.05); overflow: hidden;
+    }
+    #sidebar.collapsed { width: var(--sb-w-collapsed); }
+    #sidebar-toggle {
+      display: flex; align-items: center; justify-content: flex-end;
+      padding: .55rem .65rem; border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    #sidebar.collapsed #sidebar-toggle { justify-content: center; }
+    #btn-toggle-sb {
+      width: 28px; height: 28px; border-radius: 6px;
+      border: 1px solid var(--border); background: var(--bg);
+      cursor: pointer; display: grid; place-items: center;
+      color: var(--txt-2); transition: all .15s; flex-shrink: 0;
+    }
+    #btn-toggle-sb:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-lt); }
+    #sidebar-nav {
+      display: flex; flex-direction: column; gap: .25rem;
+      padding: .65rem .5rem; flex: 1; overflow: hidden;
+    }
+    .sb-btn {
+      display: flex; align-items: center; gap: .65rem;
+      padding: .55rem .6rem; border-radius: var(--r);
+      border: none; background: transparent; cursor: pointer;
+      color: var(--txt-2); font-family: var(--sans); font-size: .875rem;
+      font-weight: 600; white-space: nowrap; width: 100%;
+      transition: background .15s, color .15s; text-align: left;
+    }
+    .sb-btn:hover { background: var(--accent-lt); color: var(--accent); }
+    .sb-btn.sb-primary { background: var(--accent); color: #fff; }
+    .sb-btn.sb-primary:hover { background: #1d4ed8; }
+    .sb-btn .sb-icon { width: 20px; height: 20px; flex-shrink: 0; display:grid; place-items:center; font-size:1rem; line-height:1; }
+    .sb-btn .sb-label { transition: opacity .15s; white-space: nowrap; overflow: hidden; }
+    #sidebar.collapsed .sb-label { opacity: 0; pointer-events: none; }
+    #sidebar.collapsed .sb-btn { justify-content: center; }
+    /* empujar contenido principal */
+    #main-content {
+      margin-left: var(--sb-w);
+      transition: margin-left .22s cubic-bezier(.4,0,.2,1);
+    }
+    body.sb-collapsed #main-content { margin-left: var(--sb-w-collapsed); }
+    /* ajustar stats sticky */
+    body.sb-collapsed .stats { }
+
     /* ── Spinner ── */
     .loading { display: none; text-align: center; padding: 3rem 2rem; color: var(--txt-2); font-size: .9rem; }
     .loading.visible { display: block; }
@@ -253,6 +305,43 @@
     </div>
   </header>
 
+  <!-- ══ SIDEBAR ══ -->
+  <aside id="sidebar">
+    <div id="sidebar-toggle">
+      <button id="btn-toggle-sb" onclick="toggleSidebar()" title="Plegar / desplegar menú">
+        <svg id="sb-icon-open" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="6"  x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg id="sb-icon-close" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+    </div>
+    <nav id="sidebar-nav">
+      <button class="sb-btn" id="btn-ubicaciones" onclick="abrirModalUbicaciones()">
+        <span class="sb-icon">📍</span><span class="sb-label">Ubicaciones</span>
+      </button>
+      <button class="sb-btn" id="btn-usuarios" onclick="abrirModalUsuarios()" style="display:none">
+        <span class="sb-icon">👥</span><span class="sb-label">Usuarios</span>
+      </button>
+      <button class="sb-btn" id="btn-backup" onclick="abrirModalBackup()" style="display:none">
+        <span class="sb-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </span>
+        <span class="sb-label">Copia de seguridad</span>
+      </button>
+      <div style="flex:1"></div>
+      <button class="sb-btn sb-primary" id="btn-nuevo-equipo" onclick="abrirModalEquipo()">
+        <span class="sb-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </span>
+        <span class="sb-label">Añadir equipo</span>
+      </button>
+    </nav>
+  </aside>
+
+  <div id="main-content">
+
   <div class="api-banner" id="api-banner">⚠️ <span id="api-banner-msg"></span></div>
 
   <!-- ESTADÍSTICAS -->
@@ -284,19 +373,6 @@
         Reiniciar
       </button>
       <button class="btn-ghost" title="Recargar" onclick="cargarTodo()">↻</button>
-    </div>
-    <!-- Fila 2: acciones -->
-    <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
-      <button class="btn-secondary" onclick="abrirModalUbicaciones()" id="btn-ubicaciones">📍 Ubicaciones</button>
-      <button class="btn-secondary" id="btn-usuarios" onclick="abrirModalUsuarios()" style="display:none">👥 Usuarios</button>
-      <button class="btn-secondary" id="btn-backup" onclick="abrirModalBackup()" style="display:none" title="Copia de seguridad y restauración">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Copia de seguridad
-      </button>
-      <button class="btn-primary" onclick="abrirModalEquipo()" id="btn-nuevo-equipo">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Añadir equipo
-      </button>
     </div>
   </div>
 
@@ -2028,6 +2104,35 @@
       }
     }
 
+    // ── SIDEBAR ─────────────────────────────────
+    function toggleSidebar() {
+      const sb   = document.getElementById('sidebar');
+      const body = document.body;
+      const open = document.getElementById('sb-icon-open');
+      const close= document.getElementById('sb-icon-close');
+      const collapsed = sb.classList.toggle('collapsed');
+      body.classList.toggle('sb-collapsed', collapsed);
+      if (open)  open.style.display  = collapsed ? 'none'  : '';
+      if (close) close.style.display = collapsed ? ''      : 'none';
+      try { localStorage.setItem('sb-collapsed', collapsed ? '1' : '0'); } catch {}
+    }
+    // Restore sidebar state on load
+    (function() {
+      try {
+        if (localStorage.getItem('sb-collapsed') === '1') {
+          const sb = document.getElementById('sidebar');
+          if (sb) {
+            sb.classList.add('collapsed');
+            document.body.classList.add('sb-collapsed');
+            const open  = document.getElementById('sb-icon-open');
+            const close = document.getElementById('sb-icon-close');
+            if (open)  open.style.display  = 'none';
+            if (close) close.style.display = '';
+          }
+        }
+      } catch {}
+    })();
+
     // ── Cerrar modales ────────────────────────
     function cerrarModal(id){document.getElementById(id).classList.remove('active');}
     function cerrarSiOverlay(ev,id){if(ev.target.id===id)cerrarModal(id);}
@@ -2052,5 +2157,6 @@
       // Si no hay sesión, se muestra el login (estado por defecto)
     })();
   </script>
+  </div><!-- /#main-content -->
 </body>
 </html>
