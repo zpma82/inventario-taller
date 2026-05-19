@@ -1,9 +1,9 @@
 # =============================================================
-# Inventario Taller — Docker Compose
-# Compatible con CasaOS Custom Install
-# Puerto por defecto: 8085
+# Inventario Taller — Docker Compose para CasaOS
+# Importar en CasaOS → Apps → Custom Install → Docker Compose
+# WebUI: http://<IP-NAS>:8085
 # =============================================================
-version: "3.9"
+name: inventario-taller
 
 services:
 
@@ -12,52 +12,66 @@ services:
     container_name: inventaller_db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-RootPass_Cambia1!}
+      MYSQL_ROOT_PASSWORD: RootPass_Cambia1!
       MYSQL_DATABASE: inventaller
+      MYSQL_USER: almacen_local
+      MYSQL_PASSWORD: CambiaEstaPassword1!
     volumes:
-      - inventaller_db:/var/lib/mysql
-      - ./app/sql/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
-      - ./app/sql/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
-      - ./app/sql/03_usuarios.sql:/docker-entrypoint-initdb.d/03_usuarios.sql:ro
-      - ./app/sql/05_vistas.sql:/docker-entrypoint-initdb.d/05_vistas.sql:ro
-      - ./app/sql/06_usuarios_app.sql:/docker-entrypoint-initdb.d/06_usuarios_app.sql:ro
-      - ./app/sql/07_migracion_subcategorias.sql:/docker-entrypoint-initdb.d/07_migracion_subcategorias.sql:ro
-      - ./app/sql/08_especificaciones.sql:/docker-entrypoint-initdb.d/08_especificaciones.sql:ro
+      - /DATA/AppData/inventaller/db:/var/lib/mysql
+      - /DATA/AppData/inventaller/sql/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - /DATA/AppData/inventaller/sql/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+      - /DATA/AppData/inventaller/sql/03_usuarios.sql:/docker-entrypoint-initdb.d/03_usuarios.sql:ro
+      - /DATA/AppData/inventaller/sql/05_vistas.sql:/docker-entrypoint-initdb.d/05_vistas.sql:ro
+      - /DATA/AppData/inventaller/sql/06_usuarios_app.sql:/docker-entrypoint-initdb.d/06_usuarios_app.sql:ro
+      - /DATA/AppData/inventaller/sql/07_migracion_subcategorias.sql:/docker-entrypoint-initdb.d/07_migracion_subcategorias.sql:ro
+      - /DATA/AppData/inventaller/sql/08_especificaciones.sql:/docker-entrypoint-initdb.d/08_especificaciones.sql:ro
+      - /DATA/AppData/inventaller/sql/09_lados_frente_atras.sql:/docker-entrypoint-initdb.d/09_lados_frente_atras.sql:ro
     networks:
       - inventaller_net
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-RootPass_Cambia1!}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pRootPass_Cambia1!"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 40s
 
   app:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
+    image: php:8.2-apache
     container_name: inventaller_app
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     ports:
-      - "${APP_PORT:-8085}:80"
+      - "8085:80"
     environment:
       DB_HOST: db
       DB_PORT: "3306"
       DB_NAME: inventaller
       DB_USER: almacen_local
-      DB_PASS: CambiaEstaPassword_Remoto1!
+      DB_PASS: CambiaEstaPassword1!
     volumes:
-      - ./app:/var/www/html:ro
+      - /DATA/AppData/inventaller/app:/var/www/html
+      - /DATA/AppData/inventaller/apache.conf:/etc/apache2/sites-available/000-default.conf:ro
+    command: >
+      bash -c "
+        docker-php-ext-install pdo pdo_mysql 2>/dev/null || true &&
+        a2enmod rewrite headers &&
+        chown -R www-data:www-data /var/www/html &&
+        apache2-foreground
+      "
     networks:
       - inventaller_net
-
-volumes:
-  inventaller_db:
-    name: inventaller_db
+    labels:
+      # ── CasaOS metadata ──────────────────────────────────────
+      casaos.app.name: "Inventario Taller"
+      casaos.app.description: "Gestión de inventario para taller — equipos, ubicaciones y movimientos"
+      casaos.app.icon: "https://raw.githubusercontent.com/zpma82/inventario-taller/main/README.md"
+      casaos.app.webui.port: "8085"
+      casaos.app.webui.path: "/"
+      casaos.app.index: "http://localhost:8085"
 
 networks:
   inventaller_net:
     name: inventaller_net
+    driver: bridge
