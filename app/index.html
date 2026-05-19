@@ -636,27 +636,31 @@
         <button class="btn-close" onclick="cerrarModal('overlay-operario')">✕</button>
       </div>
 
-      <div style="font-size:.83rem;color:var(--txt-2);background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:.7rem .9rem;margin-bottom:1rem;line-height:1.6">
-        Crea un operario asignándole un empleado, un usuario de acceso y una contraseña.<br>
-        El rol se fija automáticamente como <strong>Técnico</strong>.
+      <div style="font-size:.83rem;color:var(--txt-2);background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:.7rem .9rem;margin-bottom:1.1rem;line-height:1.6">
+        Crea el empleado y su acceso al sistema en un solo paso.<br>
+        El rol se asigna automáticamente como <strong>Técnico</strong>.
       </div>
 
-      <div class="form-group" style="margin-bottom:.7rem">
-        <label>Empleado *</label>
-        <select id="op-empleado" onchange="rellenarDesdeEmpleadoOp()">
-          <option value="">— Selecciona un empleado —</option>
-        </select>
-      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-bottom:.7rem">
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Nombre completo *</label>
+          <input type="text" id="op-nombre" placeholder="Ej: Juan García" autocomplete="off"
+                 oninput="sugerirLoginOp()"/>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Puesto / cargo</label>
+          <input type="text" id="op-puesto" placeholder="Ej: Técnico eléctrico" autocomplete="off"/>
+        </div>
         <div class="form-group">
           <label>Usuario para login *</label>
-          <input type="text" id="op-usuario" placeholder="Ej: juan" autocomplete="off"/>
+          <input type="text" id="op-usuario" placeholder="Ej: jgarcia" autocomplete="off"/>
         </div>
         <div class="form-group">
           <label>Contraseña * (mín. 4 caract.)</label>
           <input type="password" id="op-password" placeholder="••••••••" autocomplete="new-password"/>
         </div>
       </div>
+
       <div id="op-error" style="display:none;padding:.5rem .8rem;background:var(--danger-lt);border:1px solid #fca5a5;border-radius:var(--r);color:var(--danger);font-size:.83rem;margin-bottom:.75rem"></div>
       <div id="op-ok"    style="display:none;padding:.5rem .8rem;background:var(--ok-lt);border:1px solid #86efac;border-radius:var(--r);color:var(--ok);font-size:.83rem;margin-bottom:.75rem"></div>
 
@@ -2003,44 +2007,25 @@
 
 
     // ── OPERARIOS ────────────────────────────
-    async function abrirModalOperario() {
-      // Limpiar form
-      ['op-usuario','op-password'].forEach(id => document.getElementById(id).value = '');
-      ['op-error','op-ok'].forEach(id => { const el=document.getElementById(id); el.style.display='none'; el.textContent=''; });
-      // Cargar lista de empleados sin usuario
-      await cargarEmpleadosSinUsuarioOp();
+    function abrirModalOperario() {
+      ['op-nombre','op-puesto','op-usuario','op-password']
+        .forEach(id => document.getElementById(id).value = '');
+      ['op-error','op-ok']
+        .forEach(id => { const el=document.getElementById(id); el.style.display='none'; el.textContent=''; });
       document.getElementById('overlay-operario').classList.add('active');
+      document.getElementById('op-nombre').focus();
     }
 
-    async function cargarEmpleadosSinUsuarioOp() {
-      const sel = document.getElementById('op-empleado');
-      if (!sel) return;
-      try {
-        // Reutilizamos el endpoint de empleados
-        const empleados = await apiGet('auth.php?accion=empleados_sin_usuario');
-        sel.innerHTML = '<option value="">— Selecciona un empleado —</option>'
-          + empleados.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
-      } catch {
-        // Fallback: listar todos los empleados
-        try {
-          const data = await apiGet('auth.php?accion=listar_empleados');
-          const lista = Array.isArray(data) ? data : (data.empleados || []);
-          sel.innerHTML = '<option value="">— Selecciona un empleado —</option>'
-            + lista.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
-        } catch(e2) {
-          sel.innerHTML = '<option value="">Error al cargar empleados</option>';
-        }
-      }
-    }
-
-    function rellenarDesdeEmpleadoOp() {
-      const sel = document.getElementById('op-empleado');
-      const txt = sel.options[sel.selectedIndex]?.text || '';
-      const inp = document.getElementById('op-usuario');
-      if (inp && txt && txt !== '— Selecciona un empleado —') {
-        // Sugerir login: primera palabra en minúsculas sin acentos
-        inp.value = txt.split(' ')[0].toLowerCase()
-          .normalize('NFD').replace(/[̀-ͯ]/g,'');
+    function sugerirLoginOp() {
+      const nombre = document.getElementById('op-nombre').value.trim();
+      const inp    = document.getElementById('op-usuario');
+      if (!nombre) return;
+      // Sugerir: primera letra del nombre + apellido, ej: "Juan García" → "jgarcia"
+      const partes = nombre.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().split(/\s+/).filter(Boolean);
+      if (partes.length >= 2) {
+        inp.value = partes[0][0] + partes.slice(1).join('');
+      } else {
+        inp.value = partes[0] || '';
       }
     }
 
@@ -2049,26 +2034,25 @@
       const okEl  = document.getElementById('op-ok');
       errEl.style.display = 'none'; okEl.style.display = 'none';
 
-      const sel      = document.getElementById('op-empleado');
-      const empId    = sel.value;
-      const nombre   = sel.options[sel.selectedIndex]?.text || '';
+      const nombre   = document.getElementById('op-nombre').value.trim();
+      const puesto   = document.getElementById('op-puesto').value.trim();
       const usuario2 = document.getElementById('op-usuario').value.trim();
       const password = document.getElementById('op-password').value;
 
-      if (!empId)              { errEl.textContent='Selecciona un empleado.'; errEl.style.display='block'; return; }
+      if (!nombre)             { errEl.textContent='El nombre es obligatorio.'; errEl.style.display='block'; return; }
       if (!usuario2)           { errEl.textContent='El usuario de login es obligatorio.'; errEl.style.display='block'; return; }
       if (!password)           { errEl.textContent='La contraseña es obligatoria.'; errEl.style.display='block'; return; }
       if (password.length < 4) { errEl.textContent='La contraseña debe tener al menos 4 caracteres.'; errEl.style.display='block'; return; }
 
       try {
-        await apiPost('auth.php', { accion:'crear_usuario', nombre, usuario2, password, rol:'tecnico', empleado_id: empId });
-        okEl.textContent = `✅ Operario "${nombre}" creado con usuario "${usuario2}" (rol: técnico).`;
+        const res = await apiPost('auth.php', { accion:'crear_operario', nombre, puesto, usuario2, password });
+        okEl.innerHTML = `✅ <strong>${nombre}</strong> creado como empleado y con acceso de login "<strong>${usuario2}</strong>" (rol: técnico).`;
         okEl.style.display = 'block';
-        ['op-usuario','op-password'].forEach(id => document.getElementById(id).value = '');
-        sel.value = '';
-        await cargarEmpleadosSinUsuarioOp();
-        // Refrescar lista de usuarios si el modal está abierto
+        ['op-nombre','op-puesto','op-usuario','op-password']
+          .forEach(id => document.getElementById(id).value = '');
+        // Refrescar lista de usuarios y empleados en el modal de usuarios si está abierto
         try { await cargarListaUsuarios(); } catch {}
+        try { await cargarEmpleadosSinUsuario(); } catch {}
       } catch(e) {
         errEl.textContent = `❌ ${e.message}`;
         errEl.style.display = 'block';
