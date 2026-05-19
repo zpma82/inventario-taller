@@ -9,6 +9,7 @@
 // POST { accion:'listar_usuarios' }                      → admin/tecnico
 // POST { accion:'listar_empleados_sin_usuario' }         → admin
 // POST { accion:'crear_usuario', ... }                   → solo admin
+// POST { accion:'crear_operario', nombre, puesto, usuario2, password } → solo admin
 // POST { accion:'editar_usuario', ... }                  → solo admin
 // POST { accion:'eliminar_usuario', id }                 → solo admin
 // =============================================================
@@ -34,7 +35,17 @@ if ($method === 'GET') {
 
 if ($method !== 'POST') { responder(['error' => 'Método no permitido'], 405); }
 
-$d      = leerBody();
+// Leer body de forma robusta: JSON puro, form-data o query string
+$rawBody = file_get_contents('php://input');
+$d = json_decode($rawBody, true);
+if (!is_array($d) || empty($d)) {
+    // Intentar como form-urlencoded
+    parse_str($rawBody, $d);
+}
+if (!is_array($d)) { $d = []; }
+// Mezclar también $_POST por si el proxy lo ha decodificado
+if (!empty($_POST)) { $d = array_merge($_POST, $d); }
+
 $accion = $d['accion'] ?? 'login';
 
 // ── LOGIN ────────────────────────────────────────────────────
@@ -185,6 +196,69 @@ if ($accion === 'crear_usuario') {
             responder(['error' => 'El nombre de usuario ya existe'], 409);
         }
         responder(['error' => 'Error al crear usuario: ' . $e->getMessage()], 500);
+    }
+}
+
+// ── CREAR EMPLEADO + USUARIO en una sola operación (solo admin) ──
+if ($accion === 'crear_operario') {
+    // Datos del empleado
+    $nombre  = trim($d['nombre']   ?? '');
+    $puesto  = trim($d['puesto']   ?? '');
+    // Datos del usuario de acceso
+    $usuario2 = trim($d['usuario2'] ?? '');
+    $pass     = $d['password']      ?? '';
+    $rol      = 'tecnico';
+
+    if (!$nombre)           { responder(['error' => 'El nombre del operario es obligatorio'], 400); }
+    if (!$usuario2)         { responder(['error' => 'El usuario de login es obligatorio'], 400); }
+    if (!$pass)             { responder(['error' => 'La contraseña es obligatoria'], 400); }
+    if (strlen($pass) < 4)  { responder(['error' => 'La contraseña debe tener al menos 4 caracteres'], 400); }
+
+    // Verificar que el usuario de login no exista ya
+    $chk = $pdo->prepare("SELECT COUNT(*) FROM usuarios WHERE usuario = ?");
+    $chk->execute([$usuario2]);
+    if ((int)$chk->fetchColumn() > 0) {
+        responder(['error' => "El usuario de login "$usuario2" ya existe"], 409);
+    }
+
+    try {
+        $pdo->beginTransaction();
+
+        // 1. Crear el empleado
+        $pdo->prepare("
+            INSERT INTO empleados (nombre, puesto, fecha_contratacion)
+            VALUES (?, ?, CURDATE())
+        ")->execute([$nombre, $puesto ?: 'Operario']);
+
+        $empleadoId = (int)$pdo->lastInsertId();
+
+        // 2. Crear el usuario vinculado al empleado
+        $pdo->prepare("
+            INSERT INTO usuarios (nombre, usuario, password_hash, rol, empleado_id)
+            VALUES (?, ?, ?, ?, ?)
+        ")->execute([
+            $nombre,
+            $usuario2,
+            password_hash($pass, PASSWORD_BCRYPT),
+            $rol,
+            $empleadoId,
+        ]);
+
+        $usuarioId = (int)$pdo->lastInsertId();
+        $pdo->commit();
+
+        responder([
+            'empleado_id' => $empleadoId,
+            'usuario_id'  => $usuarioId,
+            'mensaje'     => "Operario "$nombre" creado correctamente con acceso como "$usuario2"",
+        ], 201);
+
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        if ($e->getCode() === '23000') {
+            responder(['error' => 'El nombre de usuario ya existe'], 409);
+        }
+        responder(['error' => 'Error al crear operario: ' . $e->getMessage()], 500);
     }
 }
 

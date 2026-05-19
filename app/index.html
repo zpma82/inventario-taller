@@ -829,7 +829,7 @@
     // ── Fetch helpers ─────────────────────────
     function authHeaders() {
       const t = getToken();
-      return t ? { 'Content-Type':'application/json', 'Authorization':`Bearer ${t}` } : { 'Content-Type':'application/json' };
+      return t ? { 'Content-Type':'application/json; charset=utf-8', 'Authorization':`Bearer ${t}` } : { 'Content-Type':'application/json; charset=utf-8' };
     }
     async function apiGet(ep) {
       const r = await fetch(`${BASE_URL}/${ep}`, { headers: authHeaders() });
