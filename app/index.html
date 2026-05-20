@@ -377,6 +377,15 @@
       </button>
       <button class="btn-ghost" title="Recargar" onclick="cargarTodo()">↻</button>
     </div>
+    <!-- Fila 2: filtro por ubicación -->
+    <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center">
+      <span style="font-size:.78rem;font-weight:600;color:var(--txt-3);white-space:nowrap">📍 Ubicación:</span>
+      <select id="fu-calle"  onchange="actualizarFiltrosUbic('calle')"  style="min-width:90px;font-family:var(--mono);font-size:.82rem"><option value="">Calle</option></select>
+      <select id="fu-lado"   onchange="actualizarFiltrosUbic('lado')"   style="min-width:90px;font-family:var(--mono);font-size:.82rem"><option value="">Lado</option></select>
+      <select id="fu-hueco"  onchange="actualizarFiltrosUbic('hueco')"  style="min-width:80px;font-family:var(--mono);font-size:.82rem"><option value="">Hueco</option></select>
+      <select id="fu-altura" onchange="actualizarFiltrosUbic('altura')" style="min-width:80px;font-family:var(--mono);font-size:.82rem"><option value="">Altura</option></select>
+      <button class="btn-ghost" title="Limpiar filtro ubicación" onclick="resetFiltroUbic()" style="font-size:.8rem;padding:.3rem .55rem">✕</button>
+    </div>
   </div>
 
   <div class="loading" id="loading"><div class="spinner"></div>Cargando datos…</div>
@@ -1282,13 +1291,72 @@
       document.getElementById('busqueda').value = '';
       document.getElementById('filtro-cat').value = '';
       document.getElementById('filtro-est').value = '';
+      resetFiltroUbic();
+    }
+
+    function resetFiltroUbic() {
+      ['fu-calle','fu-lado','fu-hueco','fu-altura'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      poblarSelectsUbic();
+      renderTabla();
+    }
+
+    // Pobla los 4 selectores con los valores disponibles según filtros activos
+    function poblarSelectsUbic() {
+      const fuCalle  = document.getElementById('fu-calle')?.value  || '';
+      const fuLado   = document.getElementById('fu-lado')?.value   || '';
+      const fuHueco  = document.getElementById('fu-hueco')?.value  || '';
+      const fuAltura = document.getElementById('fu-altura')?.value || '';
+
+      // Construir el conjunto de ubicaciones que aplican a los equipos visibles
+      // (sin filtro de ubicación activo, usar todas las ubicaciones del sistema)
+      const todasUbics = ubicaciones;
+
+      // Filtrar cascada: cada nivel filtra según los niveles superiores ya seleccionados
+      const ubicsConCalle  = todasUbics;
+      const ubicsConLado   = fuCalle  ? todasUbics.filter(u => String(u.calle) === fuCalle)  : todasUbics;
+      const ubicsConHueco  = (fuCalle||fuLado)   ? ubicsConLado.filter(u => !fuLado  || String(u.lado)  === fuLado)  : todasUbics;
+      const ubicsConAltura = (fuCalle||fuLado||fuHueco) ? ubicsConHueco.filter(u => !fuHueco || String(u.hueco) === fuHueco) : todasUbics;
+
+      const uniq = (arr, key) => [...new Set(arr.map(u => String(u[key])))].sort((a,b) => isNaN(a)?a.localeCompare(b):Number(a)-Number(b));
+
+      const fill = (id, values, current) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const labels = { 'fu-calle':'Calle', 'fu-lado':'Lado', 'fu-hueco':'Hueco', 'fu-altura':'Altura' };
+        el.innerHTML = `<option value="">${labels[id]}</option>`
+          + values.map(v => `<option value="${v}"${v===current?' selected':''}>${v}</option>`).join('');
+      };
+
+      fill('fu-calle',  uniq(ubicsConCalle,  'calle'),  fuCalle);
+      fill('fu-lado',   uniq(ubicsConLado,   'lado'),   fuLado);
+      fill('fu-hueco',  uniq(ubicsConHueco,  'hueco'),  fuHueco);
+      fill('fu-altura', uniq(ubicsConAltura, 'altura'), fuAltura);
+    }
+
+    // Llamado al cambiar cualquier selector de ubicación
+    function actualizarFiltrosUbic(nivel) {
+      // Al cambiar un nivel, limpiar los niveles inferiores
+      const niveles = ['calle','lado','hueco','altura'];
+      const idx = niveles.indexOf(nivel);
+      niveles.slice(idx + 1).forEach(n => {
+        const el = document.getElementById('fu-' + n);
+        if (el) el.value = '';
+      });
+      poblarSelectsUbic();
       renderTabla();
     }
 
     function renderTabla() {
-      const busq = document.getElementById('busqueda').value.toLowerCase();
-      const cat  = document.getElementById('filtro-cat').value;
-      const est  = document.getElementById('filtro-est').value;
+      const busq    = document.getElementById('busqueda').value.toLowerCase();
+      const cat     = document.getElementById('filtro-cat').value;
+      const est     = document.getElementById('filtro-est').value;
+      const fuCalle  = document.getElementById('fu-calle')?.value  || '';
+      const fuLado   = document.getElementById('fu-lado')?.value   || '';
+      const fuHueco  = document.getElementById('fu-hueco')?.value  || '';
+      const fuAltura = document.getElementById('fu-altura')?.value || '';
 
       let datos = inventario.filter(e => {
         const lbl = e.ubicacion_label||'';
@@ -1296,7 +1364,22 @@
                             (e.numero_serie||'').toLowerCase().includes(busq) ||
                             lbl.toLowerCase().includes(busq);
         const estNorm = s => (s||'').normalize('NFC');
-        return ok && (!cat||e.categoria===cat) && (!est||estNorm(e.fila_estado)===estNorm(est)||estNorm(e.estado)===estNorm(est));
+        if (!ok) return false;
+        if (cat && e.categoria !== cat) return false;
+        if (est && estNorm(e.fila_estado) !== estNorm(est) && estNorm(e.estado) !== estNorm(est)) return false;
+        // Filtro por ubicación — comparar contra todas las ubicaciones del equipo
+        if (fuCalle || fuLado || fuHueco || fuAltura) {
+          const ubics = e.ubicaciones?.length ? e.ubicaciones
+            : (e.ubicacion_id ? [{calle: lbl.split('-')[0], lado: lbl.split('-')[1], hueco: lbl.split('-')[2], altura: lbl.split('-')[3]}] : []);
+          const match = ubics.some(u =>
+            (!fuCalle  || String(u.calle)  === fuCalle)  &&
+            (!fuLado   || String(u.lado)   === fuLado)   &&
+            (!fuHueco  || String(u.hueco)  === fuHueco)  &&
+            (!fuAltura || String(u.altura) === fuAltura)
+          );
+          if (!match) return false;
+        }
+        return true;
       });
       datos.sort((a,b) => {
         let va=a[sortCol]??'', vb=b[sortCol]??'';
@@ -1747,6 +1830,7 @@
         });
 
         // Poblar selector de calle del plano
+        poblarSelectsUbic();
         const calles = [...new Set(data.map(u => u.calle))].sort((a,b) => a - b);
         const sel = document.getElementById('plano-calle-sel');
         if (sel) {
