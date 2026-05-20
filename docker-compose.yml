@@ -36,7 +36,10 @@ services:
       start_period: 40s
 
   app:
-    image: php:8.2-apache
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: inventaller_app:latest
     container_name: inventaller_app
     restart: unless-stopped
     depends_on:
@@ -53,13 +56,6 @@ services:
     volumes:
       - /DATA/AppData/inventaller/app:/var/www/html
       - /DATA/AppData/inventaller/apache.conf:/etc/apache2/sites-available/000-default.conf:ro
-    command: >
-      bash -c "
-        docker-php-ext-install pdo pdo_mysql 2>/dev/null || true &&
-        a2enmod rewrite headers &&
-        chown -R www-data:www-data /var/www/html &&
-        apache2-foreground
-      "
     networks:
       - inventaller_net
     labels:
