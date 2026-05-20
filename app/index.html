@@ -1547,7 +1547,7 @@
       document.getElementById('f-cantidad').value  = e.cantidad     ||1;
       document.getElementById('f-fecha').value     = e.fecha_alta   ||'';
       document.getElementById('f-proveedor').value = e.proveedor_id ||'';
-      document.getElementById('f-operario').value  = '';
+      document.getElementById('f-operario').value  = e.empleado_id  ||'';
       document.getElementById('f-notas').value     = e.notas        ||'';
       document.getElementById('f-especificaciones').value = e.especificaciones ||'';
       poblarSelectCategorias();

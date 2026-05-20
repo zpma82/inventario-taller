@@ -30,11 +30,13 @@ function getTodos(PDO $pdo): void {
         SELECT e.*,
                c.nombre  AS categoria,
                sc.nombre AS subcategoria,
-               p.nombre  AS proveedor_nombre
+               p.nombre  AS proveedor_nombre,
+               em.nombre AS empleado_nombre
         FROM   equipos e
         LEFT JOIN categorias    c  ON c.id  = e.categoria_id
         LEFT JOIN subcategorias sc ON sc.id = e.subcategoria_id
         LEFT JOIN proveedores   p  ON p.id  = e.proveedor_id
+        LEFT JOIN empleados     em ON em.id = e.empleado_id
         ORDER  BY e.id DESC
     ")->fetchAll();
 
@@ -163,9 +165,9 @@ function crear(PDO $pdo): void {
     try {
         $pdo->prepare("
             INSERT INTO equipos
-                (nombre,categoria_id,subcategoria_id,numero_serie,estado,ubicacion_id,cantidad,fecha_alta,notas,proveedor_id,especificaciones)
+                (nombre,categoria_id,subcategoria_id,numero_serie,estado,ubicacion_id,cantidad,fecha_alta,notas,proveedor_id,especificaciones,empleado_id)
             VALUES
-                (:nombre,:categoria_id,:subcategoria_id,:numero_serie,:estado,:ubicacion_id,:cantidad,:fecha_alta,:notas,:proveedor_id,:especificaciones)
+                (:nombre,:categoria_id,:subcategoria_id,:numero_serie,:estado,:ubicacion_id,:cantidad,:fecha_alta,:notas,:proveedor_id,:especificaciones,:empleado_id)
         ")->execute([
             ':nombre'           => $d['nombre'],
             ':categoria_id'     => $d['categoria_id']     ?? null,
@@ -178,6 +180,7 @@ function crear(PDO $pdo): void {
             ':notas'            => $d['notas']            ?? null,
             ':proveedor_id'     => $d['proveedor_id']     ?? null,
             ':especificaciones' => $d['especificaciones'] ?? null,
+            ':empleado_id'      => $d['empleado_id']      ?? null,
         ]);
         $newId = (int)$pdo->lastInsertId();
         guardarUbicaciones($pdo, $newId, $ubicLines, $d);
@@ -230,7 +233,7 @@ function actualizar(PDO $pdo, ?int $id): void {
                 nombre=:nombre, categoria_id=:categoria_id, subcategoria_id=:subcategoria_id,
                 numero_serie=:numero_serie, estado=:estado, ubicacion_id=:ubicacion_id,
                 cantidad=:cantidad, fecha_alta=:fecha_alta, notas=:notas, proveedor_id=:proveedor_id,
-                especificaciones=:especificaciones
+                especificaciones=:especificaciones, empleado_id=:empleado_id
             WHERE id=:id
         ")->execute([
             ':nombre'           => $d['nombre']           ?? '',
@@ -244,6 +247,7 @@ function actualizar(PDO $pdo, ?int $id): void {
             ':notas'            => $d['notas']            ?? null,
             ':proveedor_id'     => $d['proveedor_id']     ?? null,
             ':especificaciones' => $d['especificaciones'] ?? null,
+            ':empleado_id'      => $d['empleado_id']      ?? null,
             ':id'               => $id,
         ]);
 
