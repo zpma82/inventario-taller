@@ -1173,6 +1173,7 @@
           fc.innerHTML = '<option value="">Todas las categorías</option>' +
             cats.map(cat=>`<option value="${cat.nombre}"${cat.nombre===actual?' selected':''}>${cat.nombre}</option>`).join('');
         }
+        poblarSelectsUbic();
         renderTabla();
       } catch(e) {
         mostrarError(`Error al cargar datos: ${e.message}`);
