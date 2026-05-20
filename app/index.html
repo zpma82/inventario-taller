@@ -1367,16 +1367,20 @@
         if (!ok) return false;
         if (cat && e.categoria !== cat) return false;
         if (est && estNorm(e.fila_estado) !== estNorm(est) && estNorm(e.estado) !== estNorm(est)) return false;
-        // Filtro por ubicación — comparar contra todas las ubicaciones del equipo
+        // Filtro por ubicación — parsear etiqueta "calle-lado-hueco-altura"
         if (fuCalle || fuLado || fuHueco || fuAltura) {
-          const ubics = e.ubicaciones?.length ? e.ubicaciones
-            : (e.ubicacion_id ? [{calle: lbl.split('-')[0], lado: lbl.split('-')[1], hueco: lbl.split('-')[2], altura: lbl.split('-')[3]}] : []);
-          const match = ubics.some(u =>
-            (!fuCalle  || String(u.calle)  === fuCalle)  &&
-            (!fuLado   || String(u.lado)   === fuLado)   &&
-            (!fuHueco  || String(u.hueco)  === fuHueco)  &&
-            (!fuAltura || String(u.altura) === fuAltura)
-          );
+          // Recoger todas las etiquetas del equipo
+          const etiquetas = e.ubicaciones?.length
+            ? e.ubicaciones.map(u => u.etiqueta || '')
+            : (lbl ? [lbl] : []);
+          const match = etiquetas.some(etiq => {
+            const parts = etiq.split('-');            // ["1","Izda","2","A"]
+            const [eCalle, eLado, eHueco, eAltura] = parts;
+            return (!fuCalle  || eCalle  === fuCalle)  &&
+                   (!fuLado   || eLado   === fuLado)   &&
+                   (!fuHueco  || eHueco  === fuHueco)  &&
+                   (!fuAltura || eAltura === fuAltura);
+          });
           if (!match) return false;
         }
         return true;
