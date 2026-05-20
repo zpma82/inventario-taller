@@ -375,16 +375,15 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
         Reiniciar
       </button>
+      <!-- separador visual -->
+      <span style="color:var(--border);font-size:1.2rem;line-height:1;user-select:none">|</span>
+      <span style="font-size:.78rem;font-weight:600;color:var(--txt-3);white-space:nowrap;flex-shrink:0">📍</span>
+      <select id="fu-calle"  onchange="actualizarFiltrosUbic('calle')"  style="width:auto;min-width:85px;font-family:var(--mono);font-size:.82rem"><option value="">Calle</option></select>
+      <select id="fu-lado"   onchange="actualizarFiltrosUbic('lado')"   style="width:auto;min-width:85px;font-family:var(--mono);font-size:.82rem"><option value="">Lado</option></select>
+      <select id="fu-hueco"  onchange="actualizarFiltrosUbic('hueco')"  style="width:auto;min-width:78px;font-family:var(--mono);font-size:.82rem"><option value="">Hueco</option></select>
+      <select id="fu-altura" onchange="actualizarFiltrosUbic('altura')" style="width:auto;min-width:78px;font-family:var(--mono);font-size:.82rem"><option value="">Altura</option></select>
+      <button class="btn-ghost" title="Limpiar filtro ubicación" onclick="resetFiltroUbic()" style="font-size:.8rem;padding:.3rem .55rem;flex-shrink:0">✕</button>
       <button class="btn-ghost" title="Recargar" onclick="cargarTodo()">↻</button>
-    </div>
-    <!-- Fila 2: filtro por ubicación -->
-    <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center">
-      <span style="font-size:.78rem;font-weight:600;color:var(--txt-3);white-space:nowrap">📍 Ubicación:</span>
-      <select id="fu-calle"  onchange="actualizarFiltrosUbic('calle')"  style="min-width:90px;font-family:var(--mono);font-size:.82rem"><option value="">Calle</option></select>
-      <select id="fu-lado"   onchange="actualizarFiltrosUbic('lado')"   style="min-width:90px;font-family:var(--mono);font-size:.82rem"><option value="">Lado</option></select>
-      <select id="fu-hueco"  onchange="actualizarFiltrosUbic('hueco')"  style="min-width:80px;font-family:var(--mono);font-size:.82rem"><option value="">Hueco</option></select>
-      <select id="fu-altura" onchange="actualizarFiltrosUbic('altura')" style="min-width:80px;font-family:var(--mono);font-size:.82rem"><option value="">Altura</option></select>
-      <button class="btn-ghost" title="Limpiar filtro ubicación" onclick="resetFiltroUbic()" style="font-size:.8rem;padding:.3rem .55rem">✕</button>
     </div>
   </div>
 
