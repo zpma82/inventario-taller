@@ -218,7 +218,7 @@ if ($accion === 'crear_operario') {
     $chk = $pdo->prepare("SELECT COUNT(*) FROM usuarios WHERE usuario = ?");
     $chk->execute([$usuario2]);
     if ((int)$chk->fetchColumn() > 0) {
-        responder(['error' => "El usuario de login "$usuario2" ya existe"], 409);
+        responder(['error' => 'El usuario de login "' . $usuario2 . '" ya existe'], 409);
     }
 
     try {
@@ -250,7 +250,7 @@ if ($accion === 'crear_operario') {
         responder([
             'empleado_id' => $empleadoId,
             'usuario_id'  => $usuarioId,
-            'mensaje'     => "Operario "$nombre" creado correctamente con acceso como "$usuario2"",
+            'mensaje'     => 'Operario "' . $nombre . '" creado correctamente con acceso como "' . $usuario2 . '"',
         ], 201);
 
     } catch (PDOException $e) {
