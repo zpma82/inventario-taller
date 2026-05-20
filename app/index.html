@@ -1360,9 +1360,16 @@
 
       let datos = inventario.filter(e => {
         const lbl = e.ubicacion_label||'';
-        const ok = !busq || (e.nombre||'').toLowerCase().includes(busq) ||
-                            (e.numero_serie||'').toLowerCase().includes(busq) ||
-                            lbl.toLowerCase().includes(busq);
+        const hayBusq = busq.length > 0;
+        const ok = !hayBusq || [
+          e.nombre,
+          e.numero_serie,
+          e.subcategoria,
+          e.proveedor_nombre,
+          e.fecha_alta,
+          e.notas,
+          e.especificaciones,
+        ].some(v => v && String(v).toLowerCase().includes(busq));
         const estNorm = s => (s||'').normalize('NFC');
         if (!ok) return false;
         if (cat && e.categoria !== cat) return false;
