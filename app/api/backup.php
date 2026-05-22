@@ -25,25 +25,28 @@ function verificarAdminBackup(PDO $pdo): array {
         echo json_encode(['error' => 'No autenticado']);
         exit;
     }
-    // Intentar primero tabla usuarios_app, luego usuarios (compatibilidad)
-    foreach (['usuarios_app', 'usuarios'] as $tabla) {
-        try {
-            $stmt = $pdo->prepare("SELECT * FROM `$tabla` WHERE token = ? AND token_expira > NOW()");
-            $stmt->execute([$token]);
-            $u = $stmt->fetch();
-            if ($u) {
-                if (($u['rol'] ?? '') !== 'admin') {
-                    http_response_code(403);
-                    echo json_encode(['error' => 'Solo los administradores pueden realizar copias de seguridad']);
-                    exit;
-                }
-                return $u;
-            }
-        } catch (Exception $e) { /* tabla no existe, probar la siguiente */ }
+    // Misma lógica que auth.php: token en tabla sesiones + JOIN usuarios
+    $stmt = $pdo->prepare("
+        SELECT u.id, u.usuario, u.nombre, u.rol, u.empleado_id
+        FROM   sesiones s
+        JOIN   usuarios u ON u.id = s.usuario_id
+        WHERE  s.token     = ?
+          AND  s.expira_en > NOW()
+          AND  u.activo    = 1
+    ");
+    $stmt->execute([$token]);
+    $u = $stmt->fetch();
+    if (!$u) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Token inválido o expirado']);
+        exit;
     }
-    http_response_code(401);
-    echo json_encode(['error' => 'Token inválido o expirado']);
-    exit;
+    if ($u['rol'] !== 'admin') {
+        http_response_code(403);
+        echo json_encode(['error' => 'Solo los administradores pueden realizar copias de seguridad']);
+        exit;
+    }
+    return $u;
 }
 
 $pdo    = getPDO();
