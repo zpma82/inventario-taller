@@ -146,6 +146,24 @@
     /* ajustar stats sticky */
     body.sb-collapsed .stats { }
 
+    /* ── Footer ── */
+    :root { --footer-h: 38px; }
+    #app-footer {
+      position: fixed; bottom: 0; left: var(--sb-w); right: 0;
+      height: var(--footer-h);
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      box-shadow: 0 -1px 6px rgba(0,0,0,.08);
+      display: flex; align-items: center; justify-content: center;
+      gap: .75rem; z-index: 45;
+      transition: left .22s cubic-bezier(.4,0,.2,1);
+    }
+    body.sb-collapsed #app-footer { left: var(--sb-w-collapsed); }
+    #app-footer img { height: 24px; width: auto; object-fit: contain; }
+    #app-footer span { font-size: .72rem; color: var(--txt-3); }
+    /* Espacio para que el contenido no quede detrás del footer */
+    #main-content { padding-bottom: var(--footer-h); }
+
     /* ── Spinner ── */
     .loading { display: none; text-align: center; padding: 3rem 2rem; color: var(--txt-2); font-size: .9rem; }
     .loading.visible { display: block; }
@@ -2416,5 +2434,11 @@
     })();
   </script>
   </div><!-- /#main-content -->
+
+  <!-- ══ FOOTER ══ -->
+  <footer id="app-footer">
+    <img src="img-ies.png" alt="IES Miguel de Molinos" />
+    <span>IES Miguel de Molinos · Inventario Taller</span>
+  </footer>
 </body>
 </html>
