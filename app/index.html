@@ -7,21 +7,21 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg:        #f4f6f9;
+      --bg:        #e8ecf2;
       --surface:   #ffffff;
-      --border:    #e2e6ed;
-      --accent:    #2563eb;
-      --accent-lt: #eff4ff;
-      --ok:        #16a34a;   --ok-lt:     #f0fdf4;
-      --warn:      #d97706;   --warn-lt:   #fffbeb;
-      --danger:    #dc2626;   --danger-lt: #fef2f2;
-      --txt:       #1e2535;
-      --txt-2:     #64748b;
-      --txt-3:     #94a3b8;
+      --border:    #c8d0dc;
+      --accent:    #1d4ed8;
+      --accent-lt: #dbeafe;
+      --ok:        #15803d;   --ok-lt:     #dcfce7;
+      --warn:      #b45309;   --warn-lt:   #fef3c7;
+      --danger:    #b91c1c;   --danger-lt: #fee2e2;
+      --txt:       #0f172a;
+      --txt-2:     #475569;
+      --txt-3:     #64748b;
       --sans: 'DM Sans', sans-serif;
       --mono: 'DM Mono', monospace;
       --r:    8px;
-      --sh:   0 1px 3px rgba(0,0,0,.08), 0 4px 12px rgba(0,0,0,.05);
+      --sh:   0 1px 4px rgba(0,0,0,.12), 0 4px 16px rgba(0,0,0,.08);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: var(--bg); color: var(--txt); font-family: var(--sans); font-size: 15px; line-height: 1.5; min-height: 100vh; }
@@ -48,7 +48,7 @@
     #app { display: none; }
     #app.visible { display: block; }
     :root { --header-h: 52px; }
-    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0.55rem 2rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; position: sticky; top: 0; z-index: 50; box-shadow: 0 1px 4px rgba(0,0,0,.06); height: var(--header-h); box-sizing: border-box; }
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0.55rem 2rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; position: sticky; top: 0; z-index: 50; box-shadow: 0 1px 6px rgba(0,0,0,.12); height: var(--header-h); box-sizing: border-box; }
     .brand { display: flex; align-items: center; gap: .75rem; }
     .brand-icon { width: 38px; height: 38px; background: var(--accent); border-radius: var(--r); display: grid; place-items: center; font-size: 1.1rem; flex-shrink: 0; }
     .brand h1 { font-size: 1.1rem; font-weight: 700; color: var(--txt); }
@@ -99,7 +99,7 @@
     #sidebar {
       position: fixed; top: var(--header-h); left: 0; bottom: 0;
       width: var(--sb-w); background: var(--surface);
-      border-right: 1px solid var(--border);
+      border-right: 2px solid var(--border);
       display: flex; flex-direction: column; gap: 0;
       z-index: 45; transition: width .22s cubic-bezier(.4,0,.2,1);
       box-shadow: 2px 0 8px rgba(0,0,0,.05); overflow: hidden;
