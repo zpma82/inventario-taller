@@ -1816,6 +1816,20 @@
     async function abrirModalUbicaciones() {
       document.getElementById('overlay-ubicaciones').classList.add('active');
       await refrescarListaUbicaciones();
+      // Si hay un filtro de ubicación activo, sincronizar el selector de calle del plano
+      const fuCalle = document.getElementById('fu-calle')?.value || '';
+      if (fuCalle) {
+        const sel = document.getElementById('plano-calle-sel');
+        if (sel) { sel.value = fuCalle; renderPlano(); }
+        // Resaltar el rect que coincide con el filtro completo
+        const fuLado   = document.getElementById('fu-lado')?.value   || '';
+        const fuHueco  = document.getElementById('fu-hueco')?.value  || '';
+        const fuAltura = document.getElementById('fu-altura')?.value || '';
+        if (fuLado && fuHueco && fuAltura) {
+          const etiq = `${fuCalle}-${fuLado}-${fuHueco}-${fuAltura}`;
+          setTimeout(() => resaltarRectPlano(etiq), 80);
+        }
+      }
     }
 
     async function refrescarListaUbicaciones() {
@@ -1973,7 +1987,7 @@
             const cy = yCenter - CELL_H/2;
             const fill = ALTURA_COLORS[u.altura] || '#94a3b8';
             const title = `${u.calle}-${u.lado}-${u.hueco}-${u.altura}`;
-            cells += `<rect data-tip="${title}" x="${cx.toFixed(1)}" y="${cy.toFixed(1)}" width="${cw}" height="${CELL_H}" rx="2" fill="${fill}" fill-opacity="0.82" stroke="white" stroke-width=".5" style="cursor:pointer" onmouseenter="showPlanoTip(event,'${title}')" onmouseleave="hidePlanoTip()"/>`;
+            cells += `<rect data-tip="${title}" x="${cx.toFixed(1)}" y="${cy.toFixed(1)}" width="${cw}" height="${CELL_H}" rx="2" fill="${fill}" fill-opacity="0.82" stroke="white" stroke-width=".5" style="cursor:pointer" onmouseenter="showPlanoTip(event,'${title}')" onmouseleave="hidePlanoTip()" onclick="seleccionarUbicacionPlano('${title}')"/>`;
             cells += `<text x="${(cx+cw/2).toFixed(1)}" y="${(cy+CELL_H/2+3.5).toFixed(1)}" text-anchor="middle" font-size="7" fill="white" font-family="var(--mono)" pointer-events="none">${u.altura}</text>`;
           });
           // Etiqueta del hueco
@@ -2007,7 +2021,7 @@
               : (ry + rh - MURO - 5 - (nAlt - ai) * (ch + 1));
             const fill  = ALTURA_COLORS[u.altura] || '#94a3b8';
             const title = `${u.calle}-${u.lado}-${u.hueco}-${u.altura}`;
-            cells += `<rect data-tip="${title}" x="${cx.toFixed(1)}" y="${cy.toFixed(1)}" width="${CELL_W}" height="${ch}" rx="2" fill="${fill}" fill-opacity="0.82" stroke="white" stroke-width=".5" style="cursor:pointer" onmouseenter="showPlanoTip(event,'${title}')" onmouseleave="hidePlanoTip()"/>`;
+            cells += `<rect data-tip="${title}" x="${cx.toFixed(1)}" y="${cy.toFixed(1)}" width="${CELL_W}" height="${ch}" rx="2" fill="${fill}" fill-opacity="0.82" stroke="white" stroke-width=".5" style="cursor:pointer" onmouseenter="showPlanoTip(event,'${title}')" onmouseleave="hidePlanoTip()" onclick="seleccionarUbicacionPlano('${title}')"/>`;
             cells += `<text x="${(cx+CELL_W/2).toFixed(1)}" y="${(cy+ch/2+3).toFixed(1)}" text-anchor="middle" font-size="7" fill="white" font-family="var(--mono)" pointer-events="none">${u.altura}</text>`;
           });
           // Etiqueta hueco
@@ -2075,6 +2089,53 @@
       </svg>`;
 
       wrap.innerHTML = svg;
+    }
+
+    function resaltarRectPlano(etiqueta) {
+      document.querySelectorAll('#plano-wrap rect').forEach(r => {
+        const match = r.getAttribute('data-tip') === etiqueta;
+        r.style.strokeWidth = match ? '2.5' : '.5';
+        r.style.fillOpacity = match ? '1'   : '0.82';
+      });
+    }
+
+    function seleccionarUbicacionPlano(etiqueta) {
+      // etiqueta = "1-Izda-2-A"
+      const [calle, lado, hueco, altura] = etiqueta.split('-');
+
+      // Rellenar los 4 selectores de la toolbar
+      const fuCalle  = document.getElementById('fu-calle');
+      const fuLado   = document.getElementById('fu-lado');
+      const fuHueco  = document.getElementById('fu-hueco');
+      const fuAltura = document.getElementById('fu-altura');
+
+      // Primero calle para que poblarSelectsUbic calcule bien la cascada
+      if (fuCalle)  fuCalle.value  = calle;
+      actualizarFiltrosUbic('calle');         // acota Lado, Hueco, Altura
+
+      // Luego los demás (poblarSelectsUbic ya los habrá recreado)
+      setTimeout(() => {
+        if (fuLado)   fuLado.value   = lado;
+        actualizarFiltrosUbic('lado');
+        setTimeout(() => {
+          if (fuHueco)  fuHueco.value  = hueco;
+          actualizarFiltrosUbic('hueco');
+          setTimeout(() => {
+            if (fuAltura) fuAltura.value = altura;
+            renderTabla();
+          }, 0);
+        }, 0);
+      }, 0);
+
+      // Resaltar el rect seleccionado en el plano
+      document.querySelectorAll('#plano-wrap rect').forEach(r => {
+        r.style.strokeWidth = r.getAttribute('data-tip') === etiqueta ? '2.5' : '.5';
+        r.style.stroke      = r.getAttribute('data-tip') === etiqueta ? '#fff' : 'white';
+        r.style.fillOpacity = r.getAttribute('data-tip') === etiqueta ? '1'   : '0.82';
+      });
+
+      // Cerrar el modal y dejar la tabla visible con el filtro activo
+      cerrarModal('overlay-ubicaciones');
     }
 
     function showPlanoTip(e, text) {
