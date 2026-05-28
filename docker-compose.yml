@@ -1,7 +1,7 @@
 # =============================================================
 # Inventario Taller — Docker Compose para CasaOS
-# Importar en CasaOS → Apps → Custom Install → Docker Compose
-# WebUI: http://<IP-NAS>:8085
+# Uso:    git clone ... && docker compose up -d
+# WebUI:  http://<IP>:8085   |  admin / admin
 # =============================================================
 name: inventario-taller
 
@@ -17,15 +17,7 @@ services:
       MYSQL_USER: almacen_local
       MYSQL_PASSWORD: CambiaEstaPassword1!
     volumes:
-      - /DATA/AppData/inventaller/db:/var/lib/mysql
-      - /DATA/AppData/inventaller/sql/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
-      - /DATA/AppData/inventaller/sql/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
-      - /DATA/AppData/inventaller/sql/03_usuarios.sql:/docker-entrypoint-initdb.d/03_usuarios.sql:ro
-      - /DATA/AppData/inventaller/sql/05_vistas.sql:/docker-entrypoint-initdb.d/05_vistas.sql:ro
-      - /DATA/AppData/inventaller/sql/06_usuarios_app.sql:/docker-entrypoint-initdb.d/06_usuarios_app.sql:ro
-      - /DATA/AppData/inventaller/sql/07_migracion_subcategorias.sql:/docker-entrypoint-initdb.d/07_migracion_subcategorias.sql:ro
-      - /DATA/AppData/inventaller/sql/08_especificaciones.sql:/docker-entrypoint-initdb.d/08_especificaciones.sql:ro
-      - /DATA/AppData/inventaller/sql/09_lados_frente_atras.sql:/docker-entrypoint-initdb.d/09_lados_frente_atras.sql:ro
+      - db_data:/var/lib/mysql
     networks:
       - inventaller_net
     healthcheck:
@@ -54,18 +46,19 @@ services:
       DB_USER: almacen_local
       DB_PASS: CambiaEstaPassword1!
     volumes:
-      - /DATA/AppData/inventaller/app:/var/www/html
-      - /DATA/AppData/inventaller/apache.conf:/etc/apache2/sites-available/000-default.conf:ro
+      - app_data:/var/www/html
     networks:
       - inventaller_net
     labels:
-      # ── CasaOS metadata ──────────────────────────────────────
       casaos.app.name: "Inventario Taller"
-      casaos.app.description: "Gestión de inventario para taller — equipos, ubicaciones y movimientos"
-      casaos.app.icon: "https://raw.githubusercontent.com/zpma82/inventario-taller/main/README.md"
+      casaos.app.description: "Gestión de inventario para taller"
       casaos.app.webui.port: "8085"
       casaos.app.webui.path: "/"
       casaos.app.index: "http://localhost:8085"
+
+volumes:
+  db_data:
+  app_data:
 
 networks:
   inventaller_net:
