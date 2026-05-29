@@ -1,6 +1,6 @@
 <?php
 // =============================================================
-// INVENTARIO IT — API de ubicaciones
+// INVENTARIO IT -- API de ubicaciones
 // GET  /api/ubicaciones.php              → lista todas las ubicaciones
 // GET  /api/ubicaciones.php?tipo=opciones → valores fijos de cada campo
 // POST /api/ubicaciones.php              → crear nueva ubicación

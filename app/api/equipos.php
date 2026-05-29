@@ -1,6 +1,6 @@
 <?php
 // =============================================================
-// INVENTARIO IT v3 — API de equipos
+// INVENTARIO IT v3 -- API de equipos
 // Cada equipo puede tener múltiples líneas en equipo_ubicaciones,
 // cada una con su propio estado. La lista principal devuelve
 // una "fila virtual" por cada combinación (equipo × estado).

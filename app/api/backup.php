@@ -1,11 +1,11 @@
 <?php
 // =============================================================
-// INVENTARIO TALLER — Backup y restauración de base de datos
+// INVENTARIO TALLER -- Backup y restauración de base de datos
 // NO incluir auth.php (ejecuta código en el include y responde
 // con la sesión antes de que este script pueda actuar).
 // =============================================================
 require_once __DIR__ . '/config.php';
-// config.php envía Content-Type: application/json — lo
+// config.php envía Content-Type: application/json -- lo
 // sobreescribimos justo antes de enviar el fichero.
 
 // ── Helpers de autenticación (inline, sin include auth.php) ──
@@ -116,7 +116,7 @@ if ($method === 'POST' && $accion === 'importar') {
 
     $body = json_decode(file_get_contents('php://input'), true);
 
-    // Tablas reconocidas — basta con que el JSON tenga al menos una
+    // Tablas reconocidas -- basta con que el JSON tenga al menos una
     $tablas_sistema  = ['equipos','categorias','subcategorias','ubicaciones','movimientos','especificaciones','empleados','usuarios_app'];
     $tablas_en_json  = array_intersect($tablas_sistema, array_keys($body ?? []));
 

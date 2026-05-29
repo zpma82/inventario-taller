@@ -1,6 +1,6 @@
 <?php
 // =============================================================
-// INVENTARIO IT — API de movimientos
+// INVENTARIO IT -- API de movimientos
 // GET  /api/movimientos.php?equipo_id=X  → historial de un equipo
 // GET  /api/movimientos.php              → últimos 200 movimientos
 // POST /api/movimientos.php              → registrar movimiento

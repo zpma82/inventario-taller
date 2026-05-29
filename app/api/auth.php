@@ -1,6 +1,6 @@
 <?php
 // =============================================================
-// INVENTARIO IT — API de autenticación y gestión de usuarios
+// INVENTARIO IT -- API de autenticación y gestión de usuarios
 //
 // POST { accion:'login',    usuario, password }          → token
 // GET  Authorization: Bearer <token>                     → sesión activa

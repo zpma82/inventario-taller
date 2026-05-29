@@ -1,6 +1,6 @@
 <?php
 // =============================================================
-// INVENTARIO TALLER — Configuración de conexión
+// INVENTARIO TALLER -- Configuración de conexión
 // En Docker: lee variables de entorno inyectadas por Compose.
 // En local:  usa los valores por defecto como fallback.
 // =============================================================

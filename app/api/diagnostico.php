@@ -1,6 +1,6 @@
 <?php
 // =============================================================
-// DIAGNÓSTICO — borrar tras confirmar que funciona
+// DIAGNÓSTICO -- borrar tras confirmar que funciona
 // GET  → info del servidor
 // POST → muestra exactamente lo que recibe (simula auth.php)
 // =============================================================
@@ -53,7 +53,7 @@ responder([
     'rol_usuario'     => $sesion['rol'] ?? null,
     'es_admin'        => ($sesion['rol'] ?? '') === 'admin',
     'raw_body'        => $rawBody ?: '(vacío)',
-    'accion_leída'    => $d['accion'] ?? '(no detectada — d vacío)',
+    'accion_leída'    => $d['accion'] ?? '(no detectada -- d vacío)',
     'd_completo'      => $d,
     'json_decode_ok'  => is_array(json_decode($rawBody, true)),
     'php_version'     => PHP_VERSION,

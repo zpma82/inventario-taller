@@ -1,6 +1,6 @@
 <?php
 // =============================================================
-// INVENTARIO TALLER — API de catálogos
+// INVENTARIO TALLER -- API de catálogos
 //
 // GET  ?tabla=empleados|clientes|proveedores|categorias
 // GET  ?tabla=subcategorias[&categoria_id=X]
