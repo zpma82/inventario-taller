@@ -1,7 +1,7 @@
 # =============================================================
 # Inventario Taller — Docker Compose para CasaOS
-# Uso:    git clone ... && docker compose up -d
-# WebUI:  http://<IP>:8085   |  admin / admin
+# Instalación:  git clone ... && docker compose up -d
+# WebUI:        http://<IP>:8085   |   admin / 1234
 # =============================================================
 name: inventario-taller
 
@@ -38,7 +38,9 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "8085:80"
+      - target: 80
+        published: 8085
+        protocol: tcp
     environment:
       DB_HOST: db
       DB_PORT: "3306"
@@ -49,12 +51,6 @@ services:
       - app_data:/var/www/html
     networks:
       - inventaller_net
-    labels:
-      casaos.app.name: "Inventario Taller"
-      casaos.app.description: "Gestión de inventario para taller"
-      casaos.app.webui.port: "8085"
-      casaos.app.webui.path: "/"
-      casaos.app.index: "http://localhost:8085"
 
 volumes:
   db_data:
@@ -62,5 +58,25 @@ volumes:
 
 networks:
   inventaller_net:
-    name: inventaller_net
     driver: bridge
+
+# Metadatos para CasaOS
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: app
+  store_app_id: inventario-taller
+  category: utilidades
+  title:
+    en_us: Inventario Taller
+  tagline:
+    en_us: Gestión de inventario para taller — IES Miguel de Molinos
+  description:
+    en_us: Gestión de equipos, ubicaciones y movimientos para el taller del IES.
+  port_map: "8085"
+  index: /
+  scheme: http
+  tips:
+    before_install:
+      en_us: Accede con usuario admin y contraseña 1234 tras el primer arranque.
