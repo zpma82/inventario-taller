@@ -4,7 +4,6 @@ USER="${DB_USER:-almacen_local}"
 PASS="${DB_PASS:-CambiaEstaPassword1!}"
 NAME="${DB_NAME:-inventaller}"
 ROOT_PASS="RootPass_Cambia1!"
-# --skip-ssl funciona tanto en MySQL como en MariaDB client
 MYSQL="mysql --skip-ssl"
 
 echo "[init-db] Esperando a MySQL en $HOST..."
@@ -24,10 +23,11 @@ if [ "$TABLES" -gt 1 ]; then
 fi
 
 echo "[init-db] Aplicando SQLs..."
-for SQL in /var/www/html/sql/0*.sql; do
-  echo "[init-db] → $(basename $SQL)"
+# Ordenar numéricamente todos los .sql (01_, 02_, ..., 10_, ...)
+for SQL in $(ls /var/www/html/sql/*.sql | sort -V); do
+  echo "[init-db] -> $(basename $SQL)"
   $MYSQL -h"$HOST" -uroot -p"$ROOT_PASS" "$NAME" < "$SQL" 2>&1 \
   || $MYSQL -h"$HOST" -u"$USER" -p"$PASS" "$NAME" < "$SQL" 2>&1 \
   || true
 done
-echo "[init-db] ✅ BD inicializada."
+echo "[init-db] BD inicializada."

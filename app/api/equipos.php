@@ -25,18 +25,17 @@ match ($method) {
 // Si no tiene líneas, genera una única fila sin ubicación.
 // -------------------------------------------------------------
 function getTodos(PDO $pdo): void {
-    // Datos base
+    // Detectar si columna empleado_id existe (puede faltar en instalaciones antiguas)
+    try { $pdo->query("SELECT empleado_id FROM equipos LIMIT 1"); $joinEmp = "LEFT JOIN empleados em ON em.id = e.empleado_id"; $colEmp = ", em.nombre AS empleado_nombre"; }
+    catch (Exception $ex) { $joinEmp = ""; $colEmp = ", NULL AS empleado_nombre"; }
     $equipos = $pdo->query("
-        SELECT e.*,
-               c.nombre  AS categoria,
-               sc.nombre AS subcategoria,
-               p.nombre  AS proveedor_nombre,
-               em.nombre AS empleado_nombre
+        SELECT e.*, c.nombre AS categoria, sc.nombre AS subcategoria,
+               p.nombre AS proveedor_nombre $colEmp
         FROM   equipos e
         LEFT JOIN categorias    c  ON c.id  = e.categoria_id
         LEFT JOIN subcategorias sc ON sc.id = e.subcategoria_id
         LEFT JOIN proveedores   p  ON p.id  = e.proveedor_id
-        LEFT JOIN empleados     em ON em.id = e.empleado_id
+        $joinEmp
         ORDER  BY e.id DESC
     ")->fetchAll();
 
