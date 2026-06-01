@@ -1442,7 +1442,7 @@
             <td class="td-qty">${e.fila_cantidad??e.cantidad}</td>
             <td class="td-mono" style="max-width:180px;white-space:pre-wrap;word-break:break-word;font-size:.78rem">${e.especificaciones||'—'}</td>
             <td><div class="actions">
-              <button class="btn-row r-edit" title="Editar"          onclick="editarEquipo(${e.id})"  ${!puedeEditar?'disabled':''}>✏️</button>
+              <button class="btn-row r-edit" title="Editar"          onclick="editarEquipo('${e.fila_id}')"  ${!puedeEditar?'disabled':''}>✏️</button>
               <button class="btn-row r-move" title="Mover/Ubicación" onclick="abrirMover(${e.id},'${e.fila_estado||e.estado}')"   ${!puedeStock?'disabled':''}>📦</button>
               <button class="btn-row"        title="Historial"       onclick="toggleHistorial(${e.id},this)">📋</button>
               <button class="btn-row r-del"  title="Eliminar"        onclick="eliminar(${e.id})"      ${!puedeEditar?'disabled':''}>🗑️</button>
@@ -1554,10 +1554,13 @@
       document.getElementById('f-ubicacion-cant').value = 1;
       document.getElementById('overlay-equipo').classList.add('active');
     }
-    async function editarEquipo(id) {
+    async function editarEquipo(filaId) {
       if (!['admin','tecnico'].includes(sesion?.rol)) return;
-      const e=inventario.find(x=>x.id==id); if(!e) return;
-      editId=id;
+      // Buscar por fila_id (único por fila: "id_estado") no por id (puede repetirse)
+      const e = inventario.find(x => String(x.fila_id) === String(filaId))
+             || inventario.find(x => x.id == filaId);
+      if (!e) return;
+      editId = e.id;  // el id real de la BD siempre
       document.getElementById('equipo-titulo').textContent='Editar equipo';
       document.getElementById('f-nombre').value    = e.nombre       ||'';
       document.getElementById('f-sn').value        = e.numero_serie ||'';
