@@ -268,10 +268,12 @@ function eliminar(PDO $pdo, ?int $id): void {
 
 // -------------------------------------------------------------
 function guardarUbicaciones(PDO $pdo, int $equipoId, ?array $lines, array $d): void {
-    $pdo->prepare("DELETE FROM equipo_ubicaciones WHERE equipo_id = ?")
-        ->execute([$equipoId]);
-
     $estadoDefault = $d['estado'] ?? 'Activo';
+
+    // Borrar SOLO las ubicaciones del estado que se está editando.
+    // Los demás estados del mismo equipo no se tocan.
+    $pdo->prepare("DELETE FROM equipo_ubicaciones WHERE equipo_id = ? AND estado = ?")
+        ->execute([$equipoId, $estadoDefault]);
 
     if ($lines && count($lines) > 0) {
         $ins = $pdo->prepare(
@@ -279,10 +281,10 @@ function guardarUbicaciones(PDO $pdo, int $equipoId, ?array $lines, array $d): v
              ON DUPLICATE KEY UPDATE cantidad = VALUES(cantidad)"
         );
         foreach ($lines as $l) {
-            $uid    = (int)($l['id'] ?? 0);
-            $cant   = (int)($l['cantidad'] ?? 1);
-            $est    = in_array($l['estado'] ?? '', ['Activo','En reparación','Baja'])
-                      ? $l['estado'] : $estadoDefault;
+            $uid  = (int)($l['id'] ?? 0);
+            $cant = (int)($l['cantidad'] ?? 1);
+            $est  = in_array($l['estado'] ?? '', ['Activo','En reparación','Baja'])
+                    ? $l['estado'] : $estadoDefault;
             if ($uid > 0 && $cant > 0) $ins->execute([$equipoId, $uid, $cant, $est]);
         }
     } elseif (!empty($d['ubicacion_id'])) {

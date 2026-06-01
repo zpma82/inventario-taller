@@ -16,6 +16,7 @@ services:
       MYSQL_DATABASE: inventaller
       MYSQL_USER: almacen_local
       MYSQL_PASSWORD: CambiaEstaPassword1!
+      TZ: Europe/Madrid
     volumes:
       - db_data:/var/lib/mysql
     networks:
