@@ -1433,7 +1433,7 @@
           // La primera fila de un grupo diferente lleva borde visual solo si NO es la primera fila absoluta
           return `
           <tr class="${sepClass}">
-            <td class="td-id">${e.id}</td>
+            <td class="td-id" title="ID interno: ${e.id}">${codigoEquipo(e)}</td>
             <td class="td-name">${e.nombre}${e.notas?`<div class="td-sub">${e.notas}</div>`:''}</td>
             <td>${badgeCat(e.categoria)}</td>
             <td class="td-mono">${e.subcategoria||'—'}</td>
@@ -1556,16 +1556,24 @@
     }
     async function editarEquipo(filaId) {
       if (!['admin','tecnico'].includes(sesion?.rol)) return;
-      // Buscar por fila_id (único por fila: "id_estado") no por id (puede repetirse)
-      const e = inventario.find(x => String(x.fila_id) === String(filaId))
-             || inventario.find(x => x.id == filaId);
-      if (!e) return;
-      editId = e.id;  // el id real de la BD siempre
+      // Buscar en el array local para obtener el id real
+      const fila = inventario.find(x => String(x.fila_id) === String(filaId))
+                || inventario.find(x => x.id == filaId);
+      if (!fila) return;
+
+      // Siempre pedir datos frescos al servidor para evitar que notas/specs
+      // vengan de una fila cacheada incorrecta cuando hay filas con el mismo id
+      let e;
+      try { e = await apiGet('equipos.php?id=' + fila.id); }
+      catch { e = fila; }  // fallback al cache si falla
+
+      editId = fila.id;
       document.getElementById('equipo-titulo').textContent='Editar equipo';
       document.getElementById('f-nombre').value    = e.nombre       ||'';
       document.getElementById('f-sn').value        = e.numero_serie ||'';
-      document.getElementById('f-estado').value    = e.estado       ||'Activo';
-      document.getElementById('f-cantidad').value  = e.cantidad     ||1;
+      // El estado de la FILA (no el del equipo completo, que puede ser distinto)
+      document.getElementById('f-estado').value    = fila.fila_estado || e.estado || 'Activo';
+      document.getElementById('f-cantidad').value  = fila.fila_cantidad || e.cantidad || 1;
       document.getElementById('f-fecha').value     = e.fecha_alta   ||'';
       document.getElementById('f-proveedor').value = e.proveedor_id ||'';
       document.getElementById('f-operario').value  = e.empleado_id  ||'';
@@ -1576,7 +1584,10 @@
       await cargarSubcategorias(e.categoria_id);
       document.getElementById('f-subcat').value = e.subcategoria_id||'';
       ocultarNuevaCat(); ocultarNuevaSubcat();
-      fUbicLineas = e.ubicaciones ? e.ubicaciones.map(u=>({...u})) : (e.ubicacion_id ? [{id: e.ubicacion_id, etiqueta: e.ubicacion_label, cantidad: e.cantidad}] : []);
+      // Usar las ubicaciones de la FILA específica (estado concreto)
+      fUbicLineas = fila.ubicaciones?.length
+        ? fila.ubicaciones.map(u=>({...u}))
+        : (fila.ubicacion_id ? [{id: fila.ubicacion_id, etiqueta: fila.ubicacion_label, cantidad: fila.fila_cantidad||fila.cantidad}] : []);
       renderFUbicLineas();
       document.getElementById('f-ubicacion-id').value   = '';
       document.getElementById('f-ubicacion-cant').value = 1;
@@ -2381,6 +2392,13 @@
         btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Importar registros';
         btn.disabled = false;
       }
+    }
+
+    // ── CÓDIGO DE REFERENCIA ────────────────────
+    function codigoEquipo(e) {
+      const pad = (n, l=3) => String(n||0).padStart(l,'0');
+      const estado = {'Activo':'1','En reparación':'2','Baja':'3'}[e.fila_estado||e.estado] || '0';
+      return pad(e.categoria_id) + pad(e.subcategoria_id) + estado + pad(e.id);
     }
 
     // ── SIDEBAR ─────────────────────────────────
