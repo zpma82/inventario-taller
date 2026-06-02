@@ -51,7 +51,7 @@ function getTodos(PDO $pdo): void {
         ORDER  BY eu.equipo_id, eu.estado, eu.id
     ")->fetchAll();
 
-    // Indexar por equipo_id
+    // Indexar ubicaciones por equipo_id
     $byEquipo = [];
     foreach ($ubics as $row) {
         $byEquipo[$row['equipo_id']][] = [
@@ -62,12 +62,25 @@ function getTodos(PDO $pdo): void {
         ];
     }
 
+    // Cargar notas/specs por (equipo_id, estado)
+    $notasPorEstado = [];
+    try {
+        $rowsInfo = $pdo->query("SELECT equipo_id, estado, notas, especificaciones FROM equipo_estado_info")->fetchAll();
+        foreach ($rowsInfo as $r) {
+            $notasPorEstado[$r['equipo_id']][$r['estado']] = [
+                'notas'           => $r['notas'],
+                'especificaciones'=> $r['especificaciones'],
+            ];
+        }
+    } catch (Exception $ex) { /* tabla aun no existe */ }
+
     $filas = [];
     foreach ($equipos as $e) {
         $lines = $byEquipo[$e['id']] ?? [];
 
         if (empty($lines)) {
             // Sin ubicaciones: una sola fila con el estado del equipo
+            $infoFila = $notasPorEstado[$e['id']][$e['estado']] ?? [];
             $row = array_merge($e, [
                 'ubicaciones'     => [],
                 'ubicacion_label' => null,
@@ -75,6 +88,8 @@ function getTodos(PDO $pdo): void {
                 'fila_estado'     => $e['estado'],
                 'fila_cantidad'   => (int)$e['cantidad'],
                 'fila_id'         => $e['id'] . '_' . $e['estado'],
+                'notas'           => $infoFila['notas']            ?? $e['notas'],
+                'especificaciones'=> $infoFila['especificaciones'] ?? $e['especificaciones'],
             ]);
             $filas[] = $row;
             continue;
@@ -93,15 +108,18 @@ function getTodos(PDO $pdo): void {
                 ? $etiquetas[0]
                 : implode(' · ', array_map(fn($l) => $l['etiqueta'].' ×'.$l['cantidad'], $lineasEstado));
 
+            $infoFila = $notasPorEstado[$e['id']][$estado] ?? [];
             $row = array_merge($e, [
                 'ubicaciones'     => $lineasEstado,
                 'ubicacion_label' => $label,
                 'ubicacion_id'    => (int)$lineasEstado[0]['id'],
-                'estado'          => $estado,           // override con el estado de la fila
+                'estado'          => $estado,
                 'fila_estado'     => $estado,
                 'fila_cantidad'   => $cantEstado,
                 'fila_id'         => $e['id'] . '_' . $estado,
-                'cantidad'        => $cantEstado,       // mostrar cant de esta fila
+                'cantidad'        => $cantEstado,
+                'notas'           => $infoFila['notas']            ?? $e['notas'],
+                'especificaciones'=> $infoFila['especificaciones'] ?? $e['especificaciones'],
             ]);
             $filas[] = $row;
         }
@@ -144,6 +162,18 @@ function getUno(PDO $pdo, int $id): void {
         : (count($lines) > 1 ? implode(' · ', array_column($lines, 'etiqueta')) : null);
     $row['ubicacion_id']    = count($lines) >= 1 ? (int)$lines[0]['id'] : null;
 
+    // Leer notas/specs del estado solicitado (parámetro GET 'estado')
+    $estado = $_GET['estado'] ?? $row['estado'] ?? 'Activo';
+    try {
+        $si = $pdo->prepare("SELECT notas, especificaciones FROM equipo_estado_info WHERE equipo_id=? AND estado=?");
+        $si->execute([$id, $estado]);
+        $info = $si->fetch();
+        if ($info) {
+            $row['notas']            = $info['notas'];
+            $row['especificaciones'] = $info['especificaciones'];
+        }
+    } catch (Exception $ex) { /* tabla aun no existe, devolver datos de equipos */ }
+
     responder($row);
 }
 
@@ -183,6 +213,8 @@ function crear(PDO $pdo): void {
         ]);
         $newId = (int)$pdo->lastInsertId();
         guardarUbicaciones($pdo, $newId, $ubicLines, $d);
+        // Guardar notas/specs por estado
+        guardarNotasEstado($pdo, $newId, $d['estado'] ?? 'Activo', $d['notas'] ?? null, $d['especificaciones'] ?? null);
         $pdo->commit();
         responder(['id' => $newId, 'mensaje' => 'Equipo creado'], 201);
     } catch (Exception $e) {
@@ -251,6 +283,8 @@ function actualizar(PDO $pdo, ?int $id): void {
         ]);
 
         guardarUbicaciones($pdo, $id, $ubicLines, $d);
+        // Guardar notas/specs por estado
+        guardarNotasEstado($pdo, $id, $d['estado'] ?? 'Activo', $d['notas'] ?? null, $d['especificaciones'] ?? null);
         $pdo->commit();
         responder(['mensaje' => 'Equipo actualizado']);
     } catch (Exception $e) {
@@ -264,6 +298,17 @@ function eliminar(PDO $pdo, ?int $id): void {
     if (!$id) responder(['error' => 'ID requerido'], 400);
     $pdo->prepare("DELETE FROM equipos WHERE id = ?")->execute([$id]);
     responder(['mensaje' => 'Equipo eliminado']);
+}
+
+// -------------------------------------------------------------
+function guardarNotasEstado(PDO $pdo, int $equipoId, string $estado, ?string $notas, ?string $specs): void {
+    try {
+        $pdo->prepare("
+            INSERT INTO equipo_estado_info (equipo_id, estado, notas, especificaciones)
+            VALUES (?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE notas=VALUES(notas), especificaciones=VALUES(especificaciones)
+        ")->execute([$equipoId, $estado, $notas, $specs]);
+    } catch (Exception $ex) { /* tabla aun no existe — ignorar */ }
 }
 
 // -------------------------------------------------------------

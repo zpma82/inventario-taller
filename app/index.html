@@ -1535,7 +1535,7 @@
     // ── Modal EQUIPO ──────────────────────────
     function abrirModalEquipo() {
       if (!['admin','tecnico','usuario'].includes(sesion?.rol)) return;
-      editId=null;
+      editId=null; editFilaEstado=null;
       document.getElementById('equipo-titulo').textContent='Nuevo equipo';
       ['f-nombre','f-sn','f-notas','f-especificaciones'].forEach(id=>document.getElementById(id).value='');
       poblarSelectCategorias();
@@ -1605,7 +1605,7 @@
         categoria_id:    parseInt(document.getElementById('f-cat').value)||null,
         subcategoria_id: parseInt(document.getElementById('f-subcat').value)||null,
         numero_serie: document.getElementById('f-sn').value.trim()||null,
-        estado:       document.getElementById('f-estado').value,
+        estado:       editFilaEstado || document.getElementById('f-estado').value,
         cantidad:     cantTotal,
         fecha_alta:   document.getElementById('f-fecha').value||null,
         proveedor_id: document.getElementById('f-proveedor').value||null,
