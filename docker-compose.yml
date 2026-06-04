@@ -69,6 +69,7 @@ x-casaos:
   main: app
   store_app_id: inventario-taller
   category: utilidades
+  icon: http://localhost:8085/icon.png
   title:
     en_us: Inventario Taller
   tagline:
