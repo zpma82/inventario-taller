@@ -1618,7 +1618,19 @@
       try {
         editId ? await apiPut('equipos.php',editId,datos) : await apiPost('equipos.php',datos);
         cerrarModal('overlay-equipo'); await cargarTodo();
-      } catch(e){mostrarError(`Error al guardar: ${e.message}`);}
+      } catch(err) {
+        console.error('guardarEquipo error:', err);
+        const msg = err.message || String(err);
+        // Mostrar en el modal directamente para que el usuario lo vea
+        let errDiv = document.getElementById('equipo-save-err');
+        if (!errDiv) {
+          errDiv = document.createElement('div');
+          errDiv.id = 'equipo-save-err';
+          errDiv.style.cssText = 'margin:.5rem 0;padding:.5rem .8rem;background:var(--danger-lt);border:1px solid #fca5a5;border-radius:var(--r);color:var(--danger);font-size:.83rem';
+          document.querySelector('#overlay-equipo .modal-footer').prepend(errDiv);
+        }
+        errDiv.textContent = '❌ ' + msg;
+      }
     }
     async function eliminar(id) {
       if (!['admin','tecnico'].includes(sesion?.rol)) return;
